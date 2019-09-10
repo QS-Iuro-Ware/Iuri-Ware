@@ -1,3 +1,4 @@
+use log::error;
 use std::{error::Error, fmt, fmt::Display, fmt::Formatter};
 
 #[derive(Debug)]
@@ -10,7 +11,8 @@ pub enum IuroError {
 }
 
 impl From<serde_json::Error> for IuroError {
-    fn from(_: serde_json::Error) -> Self {
+    fn from(err: serde_json::Error) -> Self {
+        error!("Serde Error: {}", err);
         Self::JsonParsingFailed
     }
 }

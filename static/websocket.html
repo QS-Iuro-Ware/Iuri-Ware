@@ -1,110 +1,34 @@
 <!DOCTYPE html>
 <meta charset="utf-8" />
 <html>
-<head>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js">
-</script>
-  <script language="javascript" type="text/javascript">
-    $(function() {
-      var conn = null;
-      setInterval(() => {
-          conn.binaryType = "arraybuffer";
-          if (conn != null) {
-              let ping = new Uint8Array(1);
-              ping[0] = 0x9;
-              conn.send(ping);
-          }
-      }, 5000)
-      function log(msg) {
-        var control = $('#log');
-        control.html(control.html() + msg + '<br/>');
-        control.scrollTop(control.scrollTop() + 1000);
-      }
-      function connect() {
-        disconnect();
-        var wsUri = (window.location.protocol=='https:'&&'wss://'||'ws://')+window.location.host + '/ws/';
-        conn = new WebSocket(wsUri);
-        log('Connecting...');
-        conn.onopen = function() {
-          log('Connected.');
-          update_ui();
-          conn.send('"ListRooms"');
-        };
-        conn.onmessage = function(e) {
-          log('Received: ' + e.data);
-        };
-        conn.onclose = function() {
-          log('Disconnected.');
-          conn = null;
-          update_ui();
-        };
-      }
-      function disconnect() {
-        if (conn != null) {
-          log('Disconnecting...');
-          conn.close();
-          conn = null;
-          update_ui();
-        }
-      }
-      function update_ui() {
-        var msg = '';
-        if (conn == null) {
-          $('#status').text('disconnected');
-          $('#connect').html('Connect');
-        } else {
-          $('#status').text('connected (' + conn.protocol + ')');
-          $('#connect').html('Disconnect');
-        }
-      }
-      $('#connect').click(function() {
-        if (conn == null) {
-          connect();
-        } else {
-          disconnect();
-        }
-        update_ui();
-        return false;
-      });
-      $('#send').click(function() {
-        var text = $('#text').val();
-        log('Sending: ' + text);
-        conn.send('{ "Message": "' + text + '"}');
-        $('#text').val('').focus();
-        return false;
-      });
-      $('#join').click(function() {
-        var text = $('#group').val();
-        log('Joining: ' + text);
-        conn.send('{ "Join": "' + text + '"}');
-        $('#group').val('').focus();
-        return false;
-      });
-      $('#text').keyup(function(e) {
-        if (e.keyCode === 13) {
-          $('#send').click();
-          return false;
-        }
-      });
-    });
-</script>
-</head>
-<body>
-<h3>Chat!</h3>
-<div>
-  <button id="connect">Connect</button>&nbsp;|&nbsp;Status:
-  <span id="status">disconnected</span>
-</div>
-<form id="roomform" onsubmit="return false;">
-  <input id="group" type="text" />
-  <input id="join" type="button" value="Join" />
-</form>
-<div id="log"
-     style="width:20em;height:15em;overflow:auto;border:1px solid black">
-</div>
-<form id="chatform" onsubmit="return false;">
-  <input id="text" type="text" />
-  <input id="send" type="button" value="Send" />
-</form>
-</body>
+  <head>
+    <script src="./websocket.js"></script>
+  </head>
+  <body>
+    <h3>Chat!</h3>
+
+    <div>
+      <button id="connect">Connect</button> | Status:
+      <span id="status">disconnected</span>
+    </div>
+
+    <form id="roomform" onsubmit="return false;">
+      <select id="group"></select>
+      <input id="join" type="button" value="Join Group" />
+    </form>
+
+    <form id="nameform" onsubmit="return false;">
+      <input id="name" type="text" />
+      <input id="set_name" type="button" value="Set Name" />
+    </form>
+
+    <div id="log"
+       style="width:20em;height:15em;overflow:auto;border:1px solid black">
+    </div>
+
+    <form id="chatform" onsubmit="return false;">
+      <input id="text" type="text" />
+      <input id="send" type="button" value="Send" />
+    </form>
+  </body>
 </html>

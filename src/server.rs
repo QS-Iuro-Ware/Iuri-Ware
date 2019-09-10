@@ -79,7 +79,11 @@ impl Handler<ClientMessage> for IuroServer {
     type Result = Result<(), IuroError>;
 
     fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) -> Self::Result {
-        self.send_message(&msg.room, &msg.msg, msg.id)
+        if let Some(name) = msg.name {
+            self.send_message(&msg.room, &format!("{}: {}", name, msg.msg), msg.id)
+        } else {
+            self.send_message(&msg.room, &msg.msg, msg.id)
+        }
     }
 }
 

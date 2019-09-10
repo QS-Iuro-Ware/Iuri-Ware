@@ -2,11 +2,16 @@ use crate::IuroError;
 use actix::prelude::*;
 use serde::Deserialize;
 
+/// Commands sent from client (to be deserialized)
 #[derive(Deserialize)]
 pub enum Commands {
+    /// Returns all existing rooms -> '"ListRooms"'
     ListRooms,
+    /// Inserts user in room, create it if non existant, removes user from the other room (if any) '{ "Join": <string> }'
     Join(String),
+    /// Set user's name, to send with messages '{ "Name": <string> }'
     Name(String),
+    /// Message to be multicasted to all users in same room as sender, except the sender '{ "Message": <string> }'
     Message(String),
 }
 
@@ -47,7 +52,7 @@ pub struct ClientMessage {
 #[rtype("Vec<String>")]
 pub struct ListRooms;
 
-/// Join room, if room does not exists create new one.
+/// Join room, if room does not exists create new one, leave other rooms.
 #[derive(Message)]
 #[rtype("Result<(), IuroError>")]
 pub struct Join {
