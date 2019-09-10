@@ -7,6 +7,14 @@
   <script language="javascript" type="text/javascript">
     $(function() {
       var conn = null;
+      setInterval(() => {
+          conn.binaryType = "arraybuffer";
+          if (conn != null) {
+              let ping = new Uint8Array(1);
+              ping[0] = 0x9;
+              conn.send(ping);
+          }
+      }, 5000)
       function log(msg) {
         var control = $('#log');
         control.html(control.html() + msg + '<br/>');
@@ -20,6 +28,7 @@
         conn.onopen = function() {
           log('Connected.');
           update_ui();
+          conn.send('"ListRooms"');
         };
         conn.onmessage = function(e) {
           log('Received: ' + e.data);
@@ -60,8 +69,15 @@
       $('#send').click(function() {
         var text = $('#text').val();
         log('Sending: ' + text);
-        conn.send(text);
+        conn.send('{ "Message": "' + text + '"}');
         $('#text').val('').focus();
+        return false;
+      });
+      $('#join').click(function() {
+        var text = $('#group').val();
+        log('Joining: ' + text);
+        conn.send('{ "Join": "' + text + '"}');
+        $('#group').val('').focus();
         return false;
       });
       $('#text').keyup(function(e) {
@@ -79,6 +95,10 @@
   <button id="connect">Connect</button>&nbsp;|&nbsp;Status:
   <span id="status">disconnected</span>
 </div>
+<form id="roomform" onsubmit="return false;">
+  <input id="group" type="text" />
+  <input id="join" type="button" value="Join" />
+</form>
 <div id="log"
      style="width:20em;height:15em;overflow:auto;border:1px solid black">
 </div>

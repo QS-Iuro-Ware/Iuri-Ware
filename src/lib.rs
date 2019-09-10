@@ -12,7 +12,7 @@ use log::{error, trace};
 use rand::random;
 use serde::Serialize;
 use serde_json::{from_str, to_string};
-use std::time::{Duration, Instant};
+use std::{time::Duration, time::Instant, fmt::Formatter, fmt, fmt::Debug};
 
 use crate::commands::Commands;
 
@@ -55,6 +55,18 @@ struct WsIuroSession {
     name: Option<String>,
     /// Iuro server
     addr: Addr<server::IuroServer>,
+}
+
+impl Debug for WsIuroSession {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+        f.debug_struct("WsIuroSession")
+            .field("id", &self.id)
+            .field("heartbeat", &self.heartbeat)
+            .field("room", &self.room)
+            .field("name", &self.name)
+            .field("addr", &"Addr<IuroServer>")
+            .finish()
+    }
 }
 
 impl Actor for WsIuroSession {
@@ -107,11 +119,10 @@ where
 }
 
 fn spawn(
-    fut: impl Future<Item = Responses, Error = IuroError> + 'static,
-    act: &mut WsIuroSession,
+    fut: impl ActorFuture<Item = Responses, Error = IuroError, Actor = WsIuroSession> + 'static,
     ctx: &mut ws::WebsocketContext<WsIuroSession>,
 ) {
-    fut.into_actor(act)
+    fut
         .then(|res, _, ctx| {
             let json = match res {
                 Ok(res) => to_string(&res),
@@ -136,13 +147,17 @@ fn handle_text(
     match from_str(&msg)? {
         Commands::ListRooms => {
             let fut = send(act, commands::ListRooms).map(Responses::Rooms);
-            spawn(fut, act, ctx);
+            spawn(fut.into_actor(act), ctx);
         }
         Commands::Join(name) => {
-            let fut = send(act, commands::Join { id: act.id, name })
+            let fut = send(act, commands::Join { id: act.id, name: name.clone() })
                 .and_then(|r| r)
-                .map(|_: ()| Responses::Text("Joined room".to_owned()));
-            spawn(fut, act, ctx);
+                .into_actor(act)
+                .map(move |_: (), act, _| {
+                    act.room = Some(name);
+                    Responses::Text("Joined room".to_owned())
+                });
+            spawn(fut, ctx);
         }
         Commands::Name(name) => act.name = Some(name),
         Commands::Message(msg) => {
@@ -165,17 +180,9 @@ fn handle_text(
 /// WebSocket message handler
 impl StreamHandler<ws::Message, ws::ProtocolError> for WsIuroSession {
     fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
-        trace!("Websocket Message: {:?}", msg);
-
         match msg {
-            ws::Message::Ping(msg) => {
-                self.heartbeat = Instant::now();
-                ctx.pong(&msg);
-            }
-            ws::Message::Pong(_) => {
-                self.heartbeat = Instant::now();
-            }
             ws::Message::Text(text) => {
+                trace!("Websocket Message: {:?}", text);
                 if let Err(err) = handle_text(&text, self, ctx) {
                     if let Ok(json) = to_string(&Responses::Error(err.to_string())) {
                         ctx.text(json)
@@ -187,14 +194,18 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for WsIuroSession {
             // Web-Browsers don't support built-in Ping/Pong, we must mock it with binary data
             ws::Message::Binary(raw) => {
                 if raw == [0x09][..] {
+                    trace!("Hearbeat");
                     self.heartbeat = Instant::now();
                 } else {
                     error!("Unexpected binary data: {:?}", raw);
                 }
             }
-            ws::Message::Close(_) => {
-                ctx.stop();
+            ws::Message::Close(_) => ctx.stop(),
+            ws::Message::Ping(msg) => {
+                self.heartbeat = Instant::now();
+                ctx.pong(&msg);
             }
+            ws::Message::Pong(_) => (),
             ws::Message::Nop => (),
         }
     }
