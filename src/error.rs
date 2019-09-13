@@ -1,4 +1,4 @@
-use log::error;
+use log::{debug, error};
 use std::{error::Error, fmt, fmt::Display, fmt::Formatter};
 
 #[derive(Debug)]
@@ -12,7 +12,7 @@ pub enum IuroError {
 
 impl From<serde_json::Error> for IuroError {
     fn from(err: serde_json::Error) -> Self {
-        error!("Serde Error: {}", err);
+        debug!("Serde Error: {}", err);
         Self::JsonParsingFailed
     }
 }
@@ -26,11 +26,13 @@ impl From<actix::MailboxError> for IuroError {
 impl Display for IuroError {
     fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
         match self {
-            IuroError::MustJoinRoom => write!(f, "Must join room first"),
-            IuroError::JsonParsingFailed => write!(f, "Unable to parse json"),
-            IuroError::NoRoom(room) => write!(f, "Failed to find room {}", room),
-            IuroError::MailBox(_) => write!(f, "Internal Server Error"),
-            IuroError::AddrNotFound(_) => write!(f, "Internal Server Error"),
+            Self::MustJoinRoom => write!(f, "Must join room first"),
+            Self::JsonParsingFailed => write!(f, "Unable to parse json"),
+            Self::NoRoom(room) => write!(f, "Failed to find room {}", room),
+            Self::MailBox(_) | Self::AddrNotFound(_) => {
+                error!("{:?}", self);
+                write!(f, "Internal Server Error")
+            }
         }
     }
 }

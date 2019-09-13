@@ -24,30 +24,32 @@ enum Responses {
     Error(String),
 }
 
-pub fn handle_text(
-    msg: &str,
-    act: &mut WsIuroSession,
-    ctx: &mut ws::WebsocketContext<WsIuroSession>,
-) -> Result<(), IuroError> {
+type Ctx = ws::WebsocketContext<WsIuroSession>;
+
+pub fn handle_text(msg: &str, act: &mut WsIuroSession, ctx: &mut Ctx) -> Result<(), IuroError> {
     match from_str(&msg)? {
         Commands::ListRooms => {
+            // Ask `IuroServer` to list all available rooms and define response
             let fut = send(act, commands::ListRooms).map(Responses::Rooms);
+
+            // Spawn async task to serialize and send response
             spawn(fut.into_actor(act), ctx);
         }
-        Commands::Join(name) => {
-            let fut = send(
-                act,
-                commands::Join {
-                    id: act.id,
-                    name: name.clone(),
-                },
-            )
-            .and_then(|r| r)
-            .into_actor(act)
-            .map(move |_: (), act, _| {
-                act.room = Some(name);
+        Commands::Join(room) => {
+            // Ask `IuroServer` to add insert user to specified room (receiving all its new broadcasts)
+            // and leave any other, creating a new room if non existant
+            let (id, name) = (act.id, room.clone());
+
+            // Join returns a result over the send result, so we have to "unwrap" it
+            let fut = send(act, commands::Join { id, name }).and_then(|r| r);
+
+            let fut = fut.into_actor(act).map(move |_: (), act, _| {
+                // Cache room locally so we can send message to it efficiently
+                act.room = Some(room);
                 Responses::Text("Joined room".to_owned())
             });
+
+            // Spawn async task to serialize and send response
             spawn(fut, ctx);
         }
         Commands::Name(name) => act.name = Some(name),
@@ -59,6 +61,8 @@ pub fn handle_text(
                     msg,
                     room,
                 };
+
+                // Send message to `IuroServer` broadcast to user's room (except the user)
                 act.addr.do_send(cmd);
             } else {
                 return Err(IuroError::MustJoinRoom);
@@ -74,21 +78,20 @@ pub fn iuro_route(
     stream: web::Payload,
     srv: web::Data<Addr<server::IuroServer>>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    ws::start(
-        WsIuroSession {
-            // This is not ideal since `ThreadRng` is not cached,
-            // but it's better than needing an `Actor` to generate id
-            id: random(),
-            heartbeat: Instant::now(),
-            room: None,
-            name: None,
-            addr: srv.get_ref().clone(),
-        },
-        &req,
-        stream,
-    )
+    let session = WsIuroSession {
+        // This is not ideal since `ThreadRng` is not cached,
+        // but it's better than needing an `Actor` to generate id
+        id: random(),
+        heartbeat: Instant::now(),
+        room: None,
+        name: None,
+        addr: srv.get_ref().clone(),
+    };
+    // Upgrades connection to websocket
+    ws::start(session, &req, stream)
 }
 
+/// Abstracts sending message to `IuroServer` and actix error handling
 fn send<M>(act: &mut WsIuroSession, cmd: M) -> impl Future<Item = M::Result, Error = IuroError>
 where
     M: Message + Send + 'static,
@@ -98,9 +101,10 @@ where
     act.addr.send(cmd).from_err()
 }
 
+/// Spawns async task with specified future, sending its result in websocket
 fn spawn(
     fut: impl ActorFuture<Item = Responses, Error = IuroError, Actor = WsIuroSession> + 'static,
-    ctx: &mut ws::WebsocketContext<WsIuroSession>,
+    ctx: &mut Ctx,
 ) {
     fut.then(|res, _, ctx| {
         let json = match res {

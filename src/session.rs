@@ -1,6 +1,6 @@
 use actix::prelude::*;
 use actix_web_actors::ws;
-use log::{error, trace};
+use log::{debug, error, trace};
 use serde_json::to_string;
 use std::{fmt, fmt::Debug, fmt::Formatter, time::Duration, time::Instant};
 
@@ -16,13 +16,13 @@ pub struct WsIuroSession {
     /// Unique session id
     pub id: usize,
     /// Client must send ping at least once per 10 seconds (CLIENT_TIMEOUT),
-    /// otherwise we drop connection.
+    /// otherwise we drop the connection.
     pub heartbeat: Instant,
-    /// Joined room
+    /// Room users is authenticated to
     pub room: Option<String>,
     /// Peer name
     pub name: Option<String>,
-    /// Iuro server
+    /// Iuro server's address
     pub addr: Addr<IuroServer>,
 }
 
@@ -31,7 +31,7 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for WsIuroSession {
     fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
         match msg {
             ws::Message::Text(text) => {
-                trace!("Websocket Message: {:?}", text);
+                debug!("Websocket Message: {:?}", text);
                 if let Err(err) = handle_text(&text, self, ctx) {
                     if let Ok(json) = to_string(&Responses::Error(err.to_string())) {
                         ctx.text(json)

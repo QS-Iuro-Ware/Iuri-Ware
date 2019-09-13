@@ -13,18 +13,23 @@ fn main() {
 
     // Create Http server with websocket support
     HttpServer::new(move || {
-        App::new()
+        let app = App::new()
             .data(server.clone())
-            // redirect to websocket.html
+            .service(web::resource("/ws/").to(iuro_route));
+
+        // Debug interface
+        #[cfg(debug_assertions)]
+        let app = app
             .service(web::resource("/").route(web::get().to(|| {
+                // redirect to websocket.html
                 HttpResponse::Found()
                     .header("LOCATION", "/static/websocket.html")
                     .finish()
             })))
-            // websocket
-            .service(web::resource("/ws/").to(iuro_route))
             // static resources
-            .service(fs::Files::new("/static/", "static/"))
+            .service(fs::Files::new("/static/", "static/"));
+
+        app
     })
     .bind("0.0.0.0:8080")
     .expect("Unable to bind server to port 8080")
