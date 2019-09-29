@@ -1,24 +1,28 @@
 'use strict'
 
 const wsUri = (window.location.protocol== 'https:' && 'wss://' || 'ws://') + window.location.host + '/ws/';
-let conn = null;
-let ping = new Uint8Array(1);
-ping[0] = 0x9;
+const ping = (() => {
+    let ping = new Uint8Array(1);
+    ping[0] = 0x9;
+    return ping;
+})();
 
+// Hell yeah global state
+let conn = null;
 let name = null;
 
 // Ping
-setInterval(() => { if (conn != null) conn.send(ping) }, 5000);
+setInterval(() => { try { conn.send(ping) } catch {} }, 5000);
 
 document.addEventListener("DOMContentLoaded", () => {
     connect();
 
     document.querySelector("#connect").addEventListener("click", (ev) => {
         if (conn == null) {
-          connect();
-          document.querySelector("#group").focus();
+            connect();
+            document.querySelector("#group").focus();
         } else {
-          disconnect();
+            disconnect();
         }
         update_ui();
         ev.preventDefault();
@@ -53,8 +57,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.querySelector("#text").addEventListener("keyup", (ev) => {
         if (e.keyCode === 13) {
-          $('#send').click();
-          ev.preventDefault();
+            document.querySelector("#send").click();
+            ev.preventDefault();
         }
     });
 });
