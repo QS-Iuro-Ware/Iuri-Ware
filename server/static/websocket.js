@@ -1,6 +1,6 @@
 'use strict'
 
-const wsUri = (window.location.protocol== 'https:' && 'wss://' || 'ws://') + window.location.host + '/ws/';
+const wsUri = (window.location.protocol == 'https:' && 'wss://' || 'ws://') + window.location.host + '/ws/';
 const ping = (() => {
     let ping = new Uint8Array(1);
     ping[0] = 0x9;
@@ -28,31 +28,30 @@ document.addEventListener("DOMContentLoaded", () => {
         ev.preventDefault();
     });
 
-    document.querySelector("#join").addEventListener("click", (ev) => {
-        const group = document.querySelector("#group");
-        log('Joining: ' + group.value);
-        conn.send(JSON.stringify({ Join: group.value }));
-        group.value = "";
-        document.querySelector("#name").focus();
-        ev.preventDefault();
+    document.querySelector("#join_room").addEventListener("click", (ev) => {
+	const group = extractValue("#group");
+        log('Joining: ' + group);
+	send({ Join: group })
+	focusAndPreventDefault("#name", ev);
+    });
+
+    document.querySelector("#create_room").addEventListener("click", (ev) => {
+	const group = extractValue("#new_group");
+        log('Joining: ' + group);
+	send({ Join: group })
+	focusAndPreventDefault("#name", ev);
     });
 
     document.querySelector("#set_name").addEventListener("click", (ev) => {
-        const name_el = document.querySelector("#name");
-        name = name_el.value;
-        conn.send(JSON.stringify({ Name: name }));
-        name_el.value = "";
-        document.querySelector("#text").focus();
-        ev.preventDefault();
+	name = extractValue("#name");
+	send({ Name: name });
+	focusAndPreventDefault("#text", ev);
     });
 
     document.querySelector("#send").addEventListener("click", (ev) => {
-        const text = document.querySelector("#text");
-        log(name + ': ' + text.value);
-        conn.send(JSON.stringify({ Message: text.value }));
-        text.value = "";
-        text.focus();
-        ev.preventDefault();
+	const text = extractValue("#text");
+	send({ Message: text });
+	focusAndPreventDefault("#text", ev);
     });
 
     document.querySelector("#text").addEventListener("keyup", (ev) => {
@@ -62,6 +61,22 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+
+function focusAndPreventDefault(selector, ev) {
+    document.querySelector(selector).focus();
+    ev.preventDefault();
+}
+
+function extractValue(selector) {
+     const element = document.querySelector(selector);
+     const value = element.value;
+     element.value = "";
+     return value;
+}
+
+function send(obj) {
+    conn.send(JSON.stringify(obj));
+}
 
 function log(msg) {
     const control = document.querySelector("#log");
@@ -96,6 +111,7 @@ function connect() {
         if (obj.Rooms != null) {
             const select = document.querySelector("#group");
             select.innerHTML = "";
+
             for (const room of obj.Rooms) {
                 const option = document.createElement("option");
                 option.value = room;
@@ -121,7 +137,7 @@ function connect() {
 function disconnect() {
     if (conn != null) {
         log('Disconnecting...');
-        conn.close();
+        try { conn.close() } catch {};
         conn = null;
         update_ui();
     }
