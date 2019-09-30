@@ -13,20 +13,20 @@ use log::error;
 use rand::random;
 use serde::Serialize;
 use serde_json::{from_str, to_string};
-use std::time::Instant;
+use std::{time::Instant, borrow::Cow};
 
-use crate::{commands::Commands, session::WsIuroSession};
+use crate::{commands::Commands, session::IuroSession};
 
 #[derive(Serialize)]
 enum Responses {
     Rooms(Vec<String>),
-    Text(String),
+    Text(Cow<'static, str>),
     Error(String),
 }
 
-type Ctx = ws::WebsocketContext<WsIuroSession>;
+type Ctx = ws::WebsocketContext<IuroSession>;
 
-pub fn handle_text(msg: &str, act: &mut WsIuroSession, ctx: &mut Ctx) -> Result<(), IuroError> {
+pub fn handle_text(msg: &str, act: &mut IuroSession, ctx: &mut Ctx) -> Result<(), IuroError> {
     match from_str(&msg)? {
         Commands::ListRooms => {
             // Ask `IuroServer` to list all available rooms and define response
@@ -44,12 +44,12 @@ pub fn handle_text(msg: &str, act: &mut WsIuroSession, ctx: &mut Ctx) -> Result<
             let fut = send(act, commands::Join { id, name }).and_then(|r| r);
 
             let fut = fut.into_actor(act).map(move |_: (), act, _| {
-                // Cache room locally so we can send message to it efficiently
+                // Caches room locally so we can send messages to it ergonomically
                 act.room = Some(room);
-                Responses::Text("Joined room".to_owned())
+                Responses::Text(Cow::Borrowed("Joined room"))
             });
 
-            // Spawn async task to serialize and send response
+            // Spawn async task to serialize and send the response
             spawn(fut, ctx);
         }
         Commands::Name(name) => act.name = Some(name),
@@ -78,9 +78,9 @@ pub fn iuro_route(
     stream: web::Payload,
     srv: web::Data<Addr<server::IuroServer>>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let session = WsIuroSession {
+    let session = IuroSession {
         // This is not ideal since `ThreadRng` is not cached,
-        // but it's better than needing an `Actor` to generate id
+        // but it's better than needing an `Actor` to generate an id
         id: random(),
         heartbeat: Instant::now(),
         room: None,
@@ -92,7 +92,7 @@ pub fn iuro_route(
 }
 
 /// Abstracts sending message to `IuroServer` and actix error handling
-fn send<M>(act: &mut WsIuroSession, cmd: M) -> impl Future<Item = M::Result, Error = IuroError>
+fn send<M>(act: &mut IuroSession, cmd: M) -> impl Future<Item = M::Result, Error = IuroError>
 where
     M: Message + Send + 'static,
     M::Result: Send,
@@ -103,7 +103,7 @@ where
 
 /// Spawns async task with specified future, sending its result in websocket
 fn spawn(
-    fut: impl ActorFuture<Item = Responses, Error = IuroError, Actor = WsIuroSession> + 'static,
+    fut: impl ActorFuture<Item = Responses, Error = IuroError, Actor = IuroSession> + 'static,
     ctx: &mut Ctx,
 ) {
     fut.then(|res, _, ctx| {
@@ -115,6 +115,8 @@ fn spawn(
         if let Ok(json) = json {
             ctx.text(json);
         } else {
+            // Oh crap
+            // This should be unreachable
             error!("Failed to serialize `Responses`");
         }
         fut::ok(())

@@ -7,10 +7,10 @@ use actix::prelude::*;
 use log::trace;
 use std::collections::HashMap;
 
+/// Maps user's random id to its connection
 type SessionMap = HashMap<usize, Recipient<Message>>;
 
-/// `IuroServer` manages rooms and responsible for coordinating them
-/// session. implementation is super primitive
+/// `IuroServer` manages rooms and is responsible for coordinating them
 #[derive(Default)]
 pub struct IuroServer {
     unbound_sessions: SessionMap,
@@ -19,13 +19,11 @@ pub struct IuroServer {
 
 impl IuroServer {
     /// Send message to all users in the room, ignoring full mailboxes
-    fn send_message(&self, room: &str, message: &str, skip_id: usize) -> Result<(), IuroError> {
+    fn send_message(&self, room: &str, message: &str) -> Result<(), IuroError> {
         if let Some(sessions) = self.rooms.get(room) {
-            for (id, addr) in sessions {
-                if *id != skip_id {
-                    // Ignores recipients with a full mailbox
-                    let _ = addr.do_send(Message(message.to_owned()));
-                }
+            for addr in sessions.values() {
+                // Ignores recipients with a full mailbox
+                let _ = addr.do_send(Message(message.to_owned()));
             }
             Ok(())
         } else {
@@ -80,9 +78,9 @@ impl Handler<ClientMessage> for IuroServer {
 
     fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) -> Self::Result {
         if let Some(name) = msg.name {
-            self.send_message(&msg.room, &format!("{}: {}", name, msg.msg), msg.id)
+            self.send_message(&msg.room, &format!("{}: {}", name, msg.msg))
         } else {
-            self.send_message(&msg.room, &msg.msg, msg.id)
+            self.send_message(&msg.room, &format!("user-{}: {}", msg.id, msg.msg))
         }
     }
 }

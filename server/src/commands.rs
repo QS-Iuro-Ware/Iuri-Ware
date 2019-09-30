@@ -15,25 +15,25 @@ pub enum Commands {
     Message(String),
 }
 
-/// Iuro server sends this messages to session
+/// Message to be passed from Iuro's server to client
 #[derive(Message)]
 pub struct Message(pub String);
 
-/// New session is created
+/// Create new session
 #[derive(Message)]
 pub struct Connect {
     pub id: usize,
     pub addr: Recipient<Message>,
 }
 
-/// Session is disconnected
+/// Disconnect session
 #[derive(Message)]
 #[rtype("Result<(), IuroError>")]
 pub struct Disconnect {
     pub id: usize,
 }
 
-/// Send message to specific room
+/// Sends message to specific room
 #[derive(Message)]
 #[rtype("Result<(), IuroError>")]
 pub struct ClientMessage {
@@ -47,7 +47,7 @@ pub struct ClientMessage {
     pub room: String,
 }
 
-/// List of available rooms
+/// List available rooms
 #[derive(Message)]
 #[rtype("Vec<String>")]
 pub struct ListRooms;

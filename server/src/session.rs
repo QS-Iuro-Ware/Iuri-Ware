@@ -2,7 +2,7 @@ use actix::prelude::*;
 use actix_web_actors::ws;
 use log::{debug, error, trace};
 use serde_json::to_string;
-use std::{fmt, fmt::Debug, fmt::Formatter, time::Duration, time::Instant};
+use std::{fmt, fmt::Debug, fmt::Formatter, time::Duration, time::Instant, borrow::Cow};
 
 use crate::{commands, handle_text, IuroServer, Responses};
 
@@ -12,13 +12,13 @@ const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// Each websocket connection generates a session that exists until it's closed
-pub struct WsIuroSession {
+pub struct IuroSession {
     /// Unique session id
     pub id: usize,
     /// Client must send ping at least once per 10 seconds (CLIENT_TIMEOUT),
     /// otherwise we drop the connection.
     pub heartbeat: Instant,
-    /// Room users is authenticated to
+    /// Room user is authenticated to
     pub room: Option<String>,
     /// Peer name
     pub name: Option<String>,
@@ -27,7 +27,7 @@ pub struct WsIuroSession {
 }
 
 /// WebSocket message handler
-impl StreamHandler<ws::Message, ws::ProtocolError> for WsIuroSession {
+impl StreamHandler<ws::Message, ws::ProtocolError> for IuroSession {
     fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
         match msg {
             ws::Message::Text(text) => {
@@ -60,7 +60,7 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for WsIuroSession {
     }
 }
 
-impl Actor for WsIuroSession {
+impl Actor for IuroSession {
     type Context = ws::WebsocketContext<Self>;
 
     /// Method is called on actor start.
@@ -72,7 +72,7 @@ impl Actor for WsIuroSession {
         // Register self in iuro's server. `AsyncContext::wait` register
         // future within context, but context waits until this future resolves
         // before processing any other events.
-        // HttpContext::state() is instance of WsIuroSessionState, state is shared
+        // HttpContext::state() is instance of IuroSessionState, state is shared
         // across all routes within application
         let (id, addr) = (self.id, ctx.address().recipient());
         self.addr.do_send(commands::Connect { id, addr });
@@ -84,7 +84,7 @@ impl Actor for WsIuroSession {
     }
 }
 
-impl WsIuroSession {
+impl IuroSession {
     /// helper method that sends ping to client every second.
     ///
     /// also this method checks heartbeats from client
@@ -111,17 +111,19 @@ impl WsIuroSession {
 }
 
 /// Handle messages from iuro server, we simply send it to peer websocket
-impl Handler<commands::Message> for WsIuroSession {
+impl Handler<commands::Message> for IuroSession {
     type Result = ();
 
     fn handle(&mut self, msg: commands::Message, ctx: &mut Self::Context) -> Self::Result {
-        ctx.text(msg.0);
+        if let Ok(msg) = to_string(&Responses::Text(Cow::Owned(msg.0))) {
+            ctx.text(msg);
+        }
     }
 }
 
-impl Debug for WsIuroSession {
+impl Debug for IuroSession {
     fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
-        f.debug_struct("WsIuroSession")
+        f.debug_struct("IuroSession")
             .field("id", &self.id)
             .field("heartbeat", &self.heartbeat)
             .field("room", &self.room)
