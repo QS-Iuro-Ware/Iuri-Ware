@@ -1,0 +1,40 @@
+version: 2
+jobs:
+  run:
+    machine: true
+    steps:
+
+      - checkout
+
+      - restore_cache:
+          key: lockfile-{{ checksum "./Cargo.lock"}}
+
+      - run: ls ~/.cargo; if [[ $? -ne 0 ]]; then curl https://sh.rustup.rs -sSf | sh -s -- -y; fi
+      - run: ~/.cargo/bin/rustup default stable
+      - run: ~/.cargo/bin/rustup component add rustfmt
+      - run: ~/.cargo/bin/rustup component add clippy
+      - run: ~/.cargo/bin/cargo install cargo-prune
+      - run: ~/.cargo/bin/cargo check
+      - run: rm -rf target/debug/deps/codegen*
+      - run: rm -rf target/debug/deps/iuro*server*
+
+      - run: ~/.cargo/bin/cargo prune
+
+      - save_cache:
+          key: lockfile-{{ checksum "Cargo.lock"}}
+          paths:
+            - "~/.cargo"
+            - "./target/debug/deps"
+
+      - run: ~/.cargo/bin/cargo fmt --all -- --check
+      - run: ~/.cargo/bin/cargo clippy
+      - run: RUST_BACKTRACE=1 ~/.cargo/bin/cargo test
+
+workflows:
+  version: 2
+  install_build_and_test:
+    jobs:
+      - run:
+          filters:
+            branches:
+              only: master
