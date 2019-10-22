@@ -44,17 +44,15 @@ pub fn handle_text(msg: &str, act: &mut IuroSession, ctx: &mut Ctx) -> Result<()
             spawn(future, ctx);
         }
         Command::Name(name) => {
-            let future = send(
-                act,
-                SetUsername {
-                    user_id: act.id,
-                    name,
-                    room: act.room.clone(),
-                },
-            )
-            // No message is sent to user in case of success
-            .map(|_| None)
-            .into_actor(act);
+            let data = SetUsername {
+                user_id: act.id,
+                name,
+                room: act.room.clone(),
+            };
+            let future = send(act, data)
+                // No message is sent to user in case of success
+                .map(|_| None)
+                .into_actor(act);
             spawn(future, ctx);
         }
         Command::Message(msg) => {

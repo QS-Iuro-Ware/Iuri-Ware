@@ -40,7 +40,8 @@ impl<'a> Update<'a> {
                     .sum();
                 (id, user_points)
             });
-            // Get winning threshold (more than one users can win)
+
+            // Get winning threshold (more than one user can win)
             let max = points
                 .clone()
                 .map(|(_id, points)| points)

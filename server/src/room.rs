@@ -49,18 +49,12 @@ impl Room {
 
     /// Instantiates next game in queue
     pub fn start_game(&mut self) -> Game {
-        let game = self.games.pop().unwrap_or_else(random);
+        let game = self.games.remove(0);
+        self.games.push(random());
 
         self.game = Some(match game {
             Game::RockPapiuroScissor => GameState::RockPapiuroScissor(HashMap::default()),
         });
-
-        // This should never happen, but let's handle all branches appropriately
-        if self.games.is_empty() {
-            error!("Games list is empty when it shouldn't");
-            debug_assert!(false, "Games list is empty when it shouldn't");
-            self.games = (0..10).map(|_| random()).collect();
-        }
 
         game
     }
@@ -71,27 +65,31 @@ impl Room {
         user_id: usize,
         input: GameInput,
     ) -> Result<HashMap<String, usize>, IuroError> {
-        match (self.game.as_mut(), input) {
+        let has_ended = match (self.game.as_mut(), input) {
             (Some(GameState::RockPapiuroScissor(state)), GameInput::RockPapiuroScissor(input)) => {
                 let update = games::rock_papiuro_scissor::Update {
                     user_id,
                     input,
                     state,
                 };
-                if update.consume(&mut self.sessions)? {
-                    Ok(self
-                        .sessions
-                        .values()
-                        .map(|slot| (slot.name.clone(), slot.wins))
-                        .collect())
-                } else {
-                    Ok(HashMap::default())
-                }
+                update.consume(&mut self.sessions)?
             }
             (None, _) => {
                 warn!("User sent game input when it wasn't possible");
-                Err(IuroError::NoGameHappening)
+                return Err(IuroError::NoGameRunning);
             }
+        };
+
+        if has_ended {
+            // If game has ended
+            Ok(self
+                .sessions
+                .values()
+                .map(|slot| (slot.name.clone(), slot.wins))
+                .collect())
+        } else {
+            // Nobody won yet
+            Ok(HashMap::default())
         }
     }
 

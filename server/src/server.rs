@@ -74,14 +74,12 @@ impl Handler<Connect> for IuroServer {
 
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
         trace!("Websocket connection stablished: id = {}", msg.id);
-        self.unbound_sessions.insert(
-            msg.id,
-            RoomSlot {
-                recipient: msg.addr,
-                name: format!("user-{}", msg.id),
-                wins: 0,
-            },
-        );
+        let slot = RoomSlot {
+            recipient: msg.addr,
+            name: format!("user-{}", msg.id % 0xFFF),
+            wins: 0,
+        };
+        self.unbound_sessions.insert(msg.id, slot);
     }
 }
 
@@ -101,7 +99,8 @@ impl Handler<ChatMessage> for IuroServer {
     type Result = Result<(), IuroError>;
 
     fn handle(&mut self, msg: ChatMessage, _: &mut Context<Self>) -> Self::Result {
-        let name = self.rooms
+        let name = self
+            .rooms
             .get_mut(&msg.room)
             // This should never happen
             .ok_or_else(|| IuroError::NoRoom(msg.room.clone()))?
@@ -109,7 +108,8 @@ impl Handler<ChatMessage> for IuroServer {
             .get(&msg.id)
             // This should never happen
             .ok_or(IuroError::AddrNotFound(msg.id))?
-            .name.clone();
+            .name
+            .clone();
         let broadcast = Broadcast::Text(format!("{}: {}", name, msg.msg));
         self.send_message(&msg.room, &broadcast)
     }

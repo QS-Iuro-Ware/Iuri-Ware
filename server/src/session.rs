@@ -49,10 +49,7 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for IuroSession {
                 }
             }
             ws::Message::Close(_) => ctx.stop(),
-            ws::Message::Ping(msg) => {
-                self.heartbeat = Instant::now();
-                ctx.pong(&msg);
-            }
+            ws::Message::Ping(_) => (),
             ws::Message::Pong(_) => (),
             ws::Message::Nop => (),
         }
@@ -68,11 +65,6 @@ impl Actor for IuroSession {
         // We'll start heartbeat process on session start.
         self.heartbeat(ctx);
 
-        // Register self in iuro's server. `AsyncContext::wait` register
-        // future within context, but context waits until this future resolves
-        // before processing any other events.
-        // HttpContext::state() is instance of IuroSessionState, state is shared
-        // across all routes within application
         let (id, addr) = (self.id, ctx.address().recipient());
         self.addr.do_send(Connect { id, addr });
     }
@@ -100,10 +92,6 @@ impl IuroSession {
 
                 // Stop actor
                 ctx.stop();
-            } else {
-                // This doesn't work properly in web browsers
-                // (browsers API don't allow you to intercept Ping/Pong)
-                ctx.ping("");
             }
         });
     }
@@ -114,14 +102,14 @@ impl Handler<Broadcast> for IuroSession {
     type Result = ();
 
     fn handle(&mut self, msg: Broadcast, ctx: &mut Self::Context) -> Self::Result {
-        let txt = match msg {
-            Broadcast::Text(msg) => to_string(&Response::Text(Cow::Owned(msg))),
-            Broadcast::Literal(msg) => to_string(&Response::Text(Cow::Borrowed(msg))),
-            Broadcast::GameStarted(game) => to_string(&Response::GameStarted(game)),
-            Broadcast::GameEnded(wins) => to_string(&Response::GameEnded(wins)),
+        let resp = match msg {
+            Broadcast::Text(msg) => Response::Text(Cow::Owned(msg)),
+            Broadcast::Literal(msg) => Response::Text(Cow::Borrowed(msg)),
+            Broadcast::GameStarted(game) => Response::GameStarted(game),
+            Broadcast::GameEnded(wins) => Response::GameEnded(wins),
         };
 
-        if let Ok(txt) = txt {
+        if let Ok(txt) = to_string(&resp) {
             ctx.text(txt);
         }
     }
