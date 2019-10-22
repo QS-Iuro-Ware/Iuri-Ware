@@ -6,8 +6,8 @@ use iuro_server::{iuro_route, IuroServer};
 
 fn main() {
     env_logger::init();
-    let sys = System::new("iuro-server");
 
+    let sys = System::new("iuro-server");
     // Start iuro server actor
     let server = IuroServer::default().start();
 

@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.querySelector("#text").addEventListener("keyup", (ev) => {
-        if (e.keyCode === 13) {
+        if (ev.keyCode === 13) {
             document.querySelector("#send").click();
             ev.preventDefault();
         }
@@ -75,6 +75,7 @@ function extractValue(selector) {
 }
 
 function send(obj) {
+    console.log(obj);
     conn.send(JSON.stringify(obj));
 }
 
@@ -108,6 +109,7 @@ function connect() {
 
     conn.onmessage = (e) => {
         const obj = parseJson(e.data);
+	   console.log(obj);
         if (obj.Rooms != null) {
             const select = document.querySelector("#group");
             select.innerHTML = "";
@@ -118,6 +120,10 @@ function connect() {
                 option.innerText = room;
                 select.appendChild(option);
             }
+	} else if (obj.GameStarted != null) {
+	    startRockPapiuroScissor();
+	} else if (obj.GameEnded != null) {
+	    console.log(obj.GameEnded);
         } else if (obj.Text != null) {
             log(obj.Text);
         } else if (obj.Error != null) {
@@ -132,6 +138,14 @@ function connect() {
         conn = null;
         update_ui();
     };
+}
+
+function sendRockPapiuroScissor(button) {
+    send({ Game: { RockPapiuroScissor: button } });
+}
+
+function startRockPapiuroScissor() {
+    document.querySelector("#RockPapiuroScissor").style = "";
 }
 
 function disconnect() {

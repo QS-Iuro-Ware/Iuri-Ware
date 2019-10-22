@@ -2,6 +2,7 @@ mod commands;
 mod error;
 mod server;
 mod session;
+mod games;
 
 pub use crate::error::IuroError;
 pub use crate::server::IuroServer;
@@ -13,18 +14,19 @@ use log::error;
 use rand::random;
 use serde::Serialize;
 use serde_json::{from_str, to_string};
-use std::{time::Instant, borrow::Cow};
+use std::{borrow::Cow, time::Instant, collections::HashMap};
 
-use crate::{commands::Commands, session::IuroSession};
+use crate::{commands::Commands, session::IuroSession, commands::Games, commands::UserGameInput};
 
 #[derive(Serialize)]
 enum Responses {
     Rooms(Vec<String>),
     Text(Cow<'static, str>),
     Error(String),
+    GameStarted(Games),
+    // user_id -> wins
+    GameEnded(HashMap<usize, usize>),
 }
-
-type Ctx = ws::WebsocketContext<IuroSession>;
 
 pub fn handle_text(msg: &str, act: &mut IuroSession, ctx: &mut Ctx) -> Result<(), IuroError> {
     match from_str(&msg)? {
@@ -68,9 +70,16 @@ pub fn handle_text(msg: &str, act: &mut IuroSession, ctx: &mut Ctx) -> Result<()
                 return Err(IuroError::MustJoinRoom);
             }
         }
+        Commands::Game(games) => spawn(send(act, UserGameInput {
+            user_id: act.id,
+            room: act.room.as_ref().ok_or(IuroError::MustJoinRoom)?.clone(),
+            input: games
+        }).and_then(|r| r).map(|_| None).into_actor(act), ctx),
     }
     Ok(())
 }
+
+type Ctx = ws::WebsocketContext<IuroSession>;
 
 /// Entry point for our route
 pub fn iuro_route(
@@ -103,21 +112,25 @@ where
 
 /// Spawns async task with specified future, sending its result in websocket
 fn spawn(
-    fut: impl ActorFuture<Item = Responses, Error = IuroError, Actor = IuroSession> + 'static,
+    fut: impl ActorFuture<Item = impl Into<Option<Responses>>, Error = IuroError, Actor = IuroSession> + 'static,
     ctx: &mut Ctx,
 ) {
     fut.then(|res, _, ctx| {
         let json = match res {
-            Ok(res) => to_string(&res),
+            Ok(res) => if let Some(res) = res.into() {
+                to_string(&res)
+            } else {
+                return fut::ok(());
+            }
             Err(err) => to_string(&Responses::Error(err.to_string())),
         };
 
         if let Ok(json) = json {
             ctx.text(json);
         } else {
-            // Oh crap
-            // This should be unreachable
+            // This should never happen
             error!("Failed to serialize `Responses`");
+            debug_assert!(false, "Failed to serialize `Response`");
         }
         fut::ok(())
     })

@@ -2,28 +2,25 @@
 //! And manages available rooms. Peers send messages to other peers in same
 //! room through `IuroServer`.
 
-use crate::{commands::Message, commands::*, error::IuroError};
+use crate::{commands::Message, commands::*, error::IuroError, games::Room};
 use actix::prelude::*;
 use log::trace;
 use std::collections::HashMap;
 
-/// Maps user's random id to its connection
-type SessionMap = HashMap<usize, Recipient<Message>>;
-
 /// `IuroServer` manages rooms and is responsible for coordinating them
 #[derive(Default)]
 pub struct IuroServer {
-    unbound_sessions: SessionMap,
-    rooms: HashMap<String, SessionMap>,
+    unbound_sessions: HashMap<usize, Recipient<Message>>,
+    rooms: HashMap<String, Room>,
 }
 
 impl IuroServer {
     /// Send message to all users in the room, ignoring full mailboxes
-    fn send_message(&self, room: &str, message: &str) -> Result<(), IuroError> {
-        if let Some(sessions) = self.rooms.get(room) {
-            for addr in sessions.values() {
+    fn send_message(&self, room: &str, message: &Message) -> Result<(), IuroError> {
+        if let Some(room) = self.rooms.get(room) {
+            for slot in room.sessions.values() {
                 // Ignores recipients with a full mailbox
-                let _ = addr.do_send(Message(message.to_owned()));
+                let _ = slot.recipient.do_send(message.clone());
             }
             Ok(())
         } else {
@@ -33,13 +30,13 @@ impl IuroServer {
 
     /// Removes user from all rooms, returning its address, errors if user isn't in any room
     fn leave_all_rooms(&mut self, id: usize) -> Result<Recipient<Message>, IuroError> {
-        for sessions in self.rooms.values_mut() {
-            if let Some(addr) = sessions.remove(&id) {
-                for addr in sessions.values() {
+        for room in self.rooms.values_mut() {
+            if let Some(slot) = room.sessions.remove(&id) {
+                for slot in room.sessions.values() {
                     // Ignores recipients with a full mailbox
-                    let _ = addr.do_send(Message("Someone disconnected".to_owned()));
+                    let _ = slot.recipient.do_send(Message::Text("Someone disconnected".to_owned()));
                 }
-                return Ok(addr);
+                return Ok(slot.recipient);
             }
         }
         Err(IuroError::AddrNotFound(id))
@@ -78,14 +75,25 @@ impl Handler<ClientMessage> for IuroServer {
 
     fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) -> Self::Result {
         if let Some(name) = msg.name {
-            self.send_message(&msg.room, &format!("{}: {}", name, msg.msg))
+            self.send_message(&msg.room, &Message::Text(format!("{}: {}", name, msg.msg)))
         } else {
-            self.send_message(&msg.room, &format!("user-{}: {}", msg.id, msg.msg))
+            self.send_message(&msg.room, &Message::Text(format!("user-{}: {}", msg.id, msg.msg)))
         }
     }
 }
 
-/// Handler for `ListRooms` message.
+impl Handler<UserGameInput> for IuroServer {
+    type Result = Result<(), IuroError>;
+
+    fn handle(&mut self, input: UserGameInput, _: &mut Context<Self>) -> Self::Result {
+        let wins = self.rooms.get_mut(&input.room).ok_or_else(|| IuroError::NoRoom(input.room.clone()))?.update(input.user_id, input.input)?;
+        if !wins.is_empty() {
+            self.send_message(&input.room, &Message::GameEnded(wins))?;
+        }
+        Ok(())
+    }
+}
+
 impl Handler<ListRooms> for IuroServer {
     type Result = MessageResult<ListRooms>;
 
@@ -94,8 +102,6 @@ impl Handler<ListRooms> for IuroServer {
     }
 }
 
-/// Join room, send disconnect message to old room
-/// send join message to new room
 impl Handler<Join> for IuroServer {
     type Result = Result<(), IuroError>;
 
@@ -110,10 +116,12 @@ impl Handler<Join> for IuroServer {
         };
 
         // Creates room on demand
-        self.rooms
-            .entry(name)
-            .or_insert_with(SessionMap::default)
-            .insert(id, addr);
+        if let Some(game) = self.rooms
+            .entry(name.clone())
+            .or_insert_with(Room::default)
+            .join(id, addr) {
+                self.send_message(&name, &Message::GameStarted(game))?;
+        }
         Ok(())
     }
 }

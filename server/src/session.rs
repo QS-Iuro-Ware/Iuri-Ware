@@ -2,7 +2,7 @@ use actix::prelude::*;
 use actix_web_actors::ws;
 use log::{debug, error, trace};
 use serde_json::to_string;
-use std::{fmt, fmt::Debug, fmt::Formatter, time::Duration, time::Instant, borrow::Cow};
+use std::{borrow::Cow, fmt, fmt::Debug, fmt::Formatter, time::Duration, time::Instant};
 
 use crate::{commands, handle_text, IuroServer, Responses};
 
@@ -37,6 +37,7 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for IuroSession {
                         ctx.text(json)
                     } else {
                         error!("Failed to serialize `Responses`");
+                        debug_assert!(false, "Failed to serialize `Responses`");
                     }
                 }
             }
@@ -115,8 +116,14 @@ impl Handler<commands::Message> for IuroSession {
     type Result = ();
 
     fn handle(&mut self, msg: commands::Message, ctx: &mut Self::Context) -> Self::Result {
-        if let Ok(msg) = to_string(&Responses::Text(Cow::Owned(msg.0))) {
-            ctx.text(msg);
+        let txt = match msg {
+            commands::Message::Text(msg) => to_string(&Responses::Text(Cow::Owned(msg))),
+            commands::Message::GameStarted(game) => to_string(&Responses::GameStarted(game)),
+            commands::Message::GameEnded(wins) => to_string(&Responses::GameEnded(wins)),
+        };
+
+        if let Ok(txt) = txt {
+            ctx.text(txt);
         }
     }
 }

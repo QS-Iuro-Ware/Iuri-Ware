@@ -1,40 +1,23 @@
-use log::{debug, error};
-use std::{error::Error, fmt, fmt::Display, fmt::Formatter};
+use log::error;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum IuroError {
+    #[error("No game is happening")]
+    NoGameHappening,
+    #[error("Must join room first")]
     MustJoinRoom,
+    #[error("Unable to parse json")]
+    JsonParsingFailed(#[from] serde_json::Error),
+    #[error("Room `{0}` not found")]
     NoRoom(String),
+    #[error("{}", internal_error(.0))]
     AddrNotFound(usize),
-    JsonParsingFailed,
-    MailBox(actix::MailboxError),
+    #[error("{}", internal_error(.0))]
+    MailBox(#[from] actix::MailboxError),
 }
 
-impl From<serde_json::Error> for IuroError {
-    fn from(err: serde_json::Error) -> Self {
-        debug!("Serde Error: {}", err);
-        Self::JsonParsingFailed
-    }
+fn internal_error(error: impl std::fmt::Debug) -> &'static str {
+    error!("{:?}", error);
+    "Internal Server Error"
 }
-
-impl From<actix::MailboxError> for IuroError {
-    fn from(m: actix::MailboxError) -> Self {
-        Self::MailBox(m)
-    }
-}
-
-impl Display for IuroError {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
-        match self {
-            Self::MustJoinRoom => write!(f, "Must join room first"),
-            Self::JsonParsingFailed => write!(f, "Unable to parse json"),
-            Self::NoRoom(room) => write!(f, "Failed to find room {}", room),
-            Self::MailBox(_) | Self::AddrNotFound(_) => {
-                error!("{:?}", self);
-                write!(f, "Internal Server Error")
-            }
-        }
-    }
-}
-
-impl Error for IuroError {}
