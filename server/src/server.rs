@@ -1,24 +1,24 @@
-//! `IuroServer` is an actor. It maintains list of connection client session.
-//! And manages available rooms. Peers send messages to other peers in same
-//! room through `IuroServer`.
+//! `IuroServer` is an actor. It manages user connections. And available rooms.
+//! Peers communicate through `IuroServer`.
 
-use crate::{commands::Message, commands::*, error::IuroError, games::Room};
+use crate::{prelude::*, room::JoinResult};
 use actix::prelude::*;
-use log::trace;
 use std::collections::HashMap;
 
-/// `IuroServer` manages rooms and is responsible for coordinating them
+/// Manages connections and rooms, coordinates them
 #[derive(Default)]
 pub struct IuroServer {
-    unbound_sessions: HashMap<usize, Recipient<Message>>,
+    unbound_sessions: HashMap<usize, RoomSlot>,
     rooms: HashMap<String, Room>,
 }
 
 impl IuroServer {
     /// Send message to all users in the room, ignoring full mailboxes
-    fn send_message(&self, room: &str, message: &Message) -> Result<(), IuroError> {
+    fn send_message(&self, room: &str, message: &Broadcast) -> Result<(), IuroError> {
+        debug!("Broadcasting: {:?}", message);
+
         if let Some(room) = self.rooms.get(room) {
-            for slot in room.sessions.values() {
+            for slot in room.sessions().values() {
                 // Ignores recipients with a full mailbox
                 let _ = slot.recipient.do_send(message.clone());
             }
@@ -28,40 +28,68 @@ impl IuroServer {
         }
     }
 
-    /// Removes user from all rooms, returning its address, errors if user isn't in any room
-    fn leave_all_rooms(&mut self, id: usize) -> Result<Recipient<Message>, IuroError> {
-        for room in self.rooms.values_mut() {
-            if let Some(slot) = room.sessions.remove(&id) {
-                for slot in room.sessions.values() {
-                    // Ignores recipients with a full mailbox
-                    let _ = slot.recipient.do_send(Message::Text("Someone disconnected".to_owned()));
+    /// Removes user from all rooms, returning their address, errors if user isn't in any room
+    fn leave_all_rooms(&mut self, id: usize) -> Result<RoomSlot, IuroError> {
+        let mut ret = None;
+        let mut remove_room = None;
+
+        for (name, room) in self.rooms.iter_mut() {
+            if let Some(slot) = room.remove_session(id) {
+                debug!("User {} left room {}", id, name);
+
+                // Must stop current game (if any)
+                room.reset_game();
+
+                // Must delete room if empty
+                if room.sessions().is_empty() {
+                    remove_room = Some(name.clone());
                 }
-                return Ok(slot.recipient);
+
+                let msg = Broadcast::Literal("Someone disconnected");
+                for slot in room.sessions().values() {
+                    // Ignores recipients with a full mailbox
+                    let _ = slot.recipient.do_send(msg.clone());
+                }
+
+                ret = Some(slot);
+                break;
             }
         }
-        Err(IuroError::AddrNotFound(id))
+
+        if let Some(room) = remove_room {
+            trace!("Deleting room: {}", room);
+            self.rooms.remove(&room);
+        }
+
+        if let Some(slot) = ret {
+            Ok(slot)
+        } else {
+            Err(IuroError::AddrNotFound(id))
+        }
     }
 }
 
-/// Handler for Connect message.
-///
-/// Register new session and assign unique id to this session
 impl Handler<Connect> for IuroServer {
     type Result = ();
 
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
         trace!("Websocket connection stablished: id = {}", msg.id);
-        self.unbound_sessions.insert(msg.id, msg.addr);
+        self.unbound_sessions.insert(
+            msg.id,
+            RoomSlot {
+                recipient: msg.addr,
+                name: format!("user-{}", msg.id),
+                wins: 0,
+            },
+        );
     }
 }
 
-/// Handler for Disconnect message.
 impl Handler<Disconnect> for IuroServer {
     type Result = Result<(), IuroError>;
 
     fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) -> Self::Result {
         trace!("Websocket connection closed: id = {}", msg.id);
-
         if self.unbound_sessions.remove(&msg.id).is_none() {
             let _ = self.leave_all_rooms(msg.id)?;
         }
@@ -69,16 +97,21 @@ impl Handler<Disconnect> for IuroServer {
     }
 }
 
-/// Handler for Message message.
-impl Handler<ClientMessage> for IuroServer {
+impl Handler<ChatMessage> for IuroServer {
     type Result = Result<(), IuroError>;
 
-    fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) -> Self::Result {
-        if let Some(name) = msg.name {
-            self.send_message(&msg.room, &Message::Text(format!("{}: {}", name, msg.msg)))
-        } else {
-            self.send_message(&msg.room, &Message::Text(format!("user-{}: {}", msg.id, msg.msg)))
-        }
+    fn handle(&mut self, msg: ChatMessage, _: &mut Context<Self>) -> Self::Result {
+        let name = self.rooms
+            .get_mut(&msg.room)
+            // This should never happen
+            .ok_or_else(|| IuroError::NoRoom(msg.room.clone()))?
+            .sessions()
+            .get(&msg.id)
+            // This should never happen
+            .ok_or(IuroError::AddrNotFound(msg.id))?
+            .name.clone();
+        let broadcast = Broadcast::Text(format!("{}: {}", name, msg.msg));
+        self.send_message(&msg.room, &broadcast)
     }
 }
 
@@ -86,9 +119,17 @@ impl Handler<UserGameInput> for IuroServer {
     type Result = Result<(), IuroError>;
 
     fn handle(&mut self, input: UserGameInput, _: &mut Context<Self>) -> Self::Result {
-        let wins = self.rooms.get_mut(&input.room).ok_or_else(|| IuroError::NoRoom(input.room.clone()))?.update(input.user_id, input.input)?;
+        let room = self
+            .rooms
+            .get_mut(&input.room)
+            .ok_or_else(|| IuroError::NoRoom(input.room.clone()))?;
+        let wins = room.update(input.id, input.input)?;
+
         if !wins.is_empty() {
-            self.send_message(&input.room, &Message::GameEnded(wins))?;
+            debug!("Game ended: {:?}", wins);
+            let game = room.start_game();
+            self.send_message(&input.room, &Broadcast::GameEnded(wins))?;
+            self.send_message(&input.room, &Broadcast::GameStarted(game))?;
         }
         Ok(())
     }
@@ -102,33 +143,59 @@ impl Handler<ListRooms> for IuroServer {
     }
 }
 
+impl Handler<SetUsername> for IuroServer {
+    type Result = Result<(), IuroError>;
+
+    fn handle(&mut self, set: SetUsername, _: &mut Context<Self>) -> Self::Result {
+        if let Some(room) = set.room {
+            self.rooms
+                .get_mut(&room)
+                // This should never happen
+                .ok_or_else(|| IuroError::NoRoom(room.clone()))?
+                .sessions_mut()
+                .get_mut(&set.user_id)
+                // This should never happen
+                .ok_or(IuroError::AddrNotFound(set.user_id))?
+                .name = set.name;
+        } else if let Some(slot) = self.unbound_sessions.get_mut(&set.user_id) {
+            slot.name = set.name;
+        } else {
+            return Err(IuroError::AddrNotFound(set.user_id));
+        }
+        Ok(())
+    }
+}
+
 impl Handler<Join> for IuroServer {
     type Result = Result<(), IuroError>;
 
     fn handle(&mut self, msg: Join, _: &mut Context<Self>) -> Self::Result {
         let Join { id, name } = msg;
 
-        // Remove address
-        let addr = if let Some(addr) = self.unbound_sessions.remove(&msg.id) {
-            addr
+        // Remove room slot
+        let slot = if let Some(slot) = self.unbound_sessions.remove(&msg.id) {
+            slot
         } else {
             self.leave_all_rooms(id)?
         };
 
         // Creates room on demand
-        if let Some(game) = self.rooms
+        let join = self
+            .rooms
             .entry(name.clone())
             .or_insert_with(Room::default)
-            .join(id, addr) {
-                self.send_message(&name, &Message::GameStarted(game))?;
+            .join(id, slot);
+
+        match join {
+            JoinResult::NewGame(game) => self.send_message(&name, &Broadcast::GameStarted(game))?,
+            JoinResult::NoGame => {}
+            JoinResult::Full => return Err(IuroError::FullRoom(name.clone())),
         }
+
         Ok(())
     }
 }
 
-/// Make actor from `IuroServer`
 impl Actor for IuroServer {
-    /// We are going to use simple Context, we just need ability to communicate
-    /// with other actors.
     type Context = Context<Self>;
 }

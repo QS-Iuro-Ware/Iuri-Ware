@@ -11,6 +11,8 @@ pub enum IuroError {
     JsonParsingFailed(#[from] serde_json::Error),
     #[error("Room `{0}` not found")]
     NoRoom(String),
+    #[error("Room `{0}` is full")]
+    FullRoom(String),
     #[error("{}", internal_error(.0))]
     AddrNotFound(usize),
     #[error("{}", internal_error(.0))]

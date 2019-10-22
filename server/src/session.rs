@@ -4,7 +4,7 @@ use log::{debug, error, trace};
 use serde_json::to_string;
 use std::{borrow::Cow, fmt, fmt::Debug, fmt::Formatter, time::Duration, time::Instant};
 
-use crate::{commands, handle_text, IuroServer, Responses};
+use crate::{handle_text, prelude::Response, prelude::*};
 
 /// How often heartbeat pings are sent
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
@@ -20,8 +20,6 @@ pub struct IuroSession {
     pub heartbeat: Instant,
     /// Room user is authenticated to
     pub room: Option<String>,
-    /// Peer name
-    pub name: Option<String>,
     /// Iuro server's address
     pub addr: Addr<IuroServer>,
 }
@@ -31,13 +29,13 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for IuroSession {
     fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
         match msg {
             ws::Message::Text(text) => {
-                debug!("Websocket Message: {:?}", text);
+                debug!("Websocket Broadcast: {:?}", text);
                 if let Err(err) = handle_text(&text, self, ctx) {
-                    if let Ok(json) = to_string(&Responses::Error(err.to_string())) {
+                    if let Ok(json) = to_string(&Response::Error(err.to_string())) {
                         ctx.text(json)
                     } else {
-                        error!("Failed to serialize `Responses`");
-                        debug_assert!(false, "Failed to serialize `Responses`");
+                        error!("Failed to serialize `Response`");
+                        debug_assert!(false, "Failed to serialize `Response`");
                     }
                 }
             }
@@ -76,11 +74,11 @@ impl Actor for IuroSession {
         // HttpContext::state() is instance of IuroSessionState, state is shared
         // across all routes within application
         let (id, addr) = (self.id, ctx.address().recipient());
-        self.addr.do_send(commands::Connect { id, addr });
+        self.addr.do_send(Connect { id, addr });
     }
 
     fn stopping(&mut self, _: &mut Self::Context) -> Running {
-        self.addr.do_send(commands::Disconnect { id: self.id });
+        self.addr.do_send(Disconnect { id: self.id });
         Running::Stop
     }
 }
@@ -98,7 +96,7 @@ impl IuroSession {
                 trace!("Websocket Client heartbeat failed, disconnecting!");
 
                 // Notify iuro server
-                act.addr.do_send(commands::Disconnect { id });
+                act.addr.do_send(Disconnect { id });
 
                 // Stop actor
                 ctx.stop();
@@ -112,14 +110,15 @@ impl IuroSession {
 }
 
 /// Handle messages from iuro server, we simply send it to peer websocket
-impl Handler<commands::Message> for IuroSession {
+impl Handler<Broadcast> for IuroSession {
     type Result = ();
 
-    fn handle(&mut self, msg: commands::Message, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: Broadcast, ctx: &mut Self::Context) -> Self::Result {
         let txt = match msg {
-            commands::Message::Text(msg) => to_string(&Responses::Text(Cow::Owned(msg))),
-            commands::Message::GameStarted(game) => to_string(&Responses::GameStarted(game)),
-            commands::Message::GameEnded(wins) => to_string(&Responses::GameEnded(wins)),
+            Broadcast::Text(msg) => to_string(&Response::Text(Cow::Owned(msg))),
+            Broadcast::Literal(msg) => to_string(&Response::Text(Cow::Borrowed(msg))),
+            Broadcast::GameStarted(game) => to_string(&Response::GameStarted(game)),
+            Broadcast::GameEnded(wins) => to_string(&Response::GameEnded(wins)),
         };
 
         if let Ok(txt) = txt {
@@ -134,7 +133,6 @@ impl Debug for IuroSession {
             .field("id", &self.id)
             .field("heartbeat", &self.heartbeat)
             .field("room", &self.room)
-            .field("name", &self.name)
             .field("addr", &"Addr<IuroServer>")
             .finish()
     }

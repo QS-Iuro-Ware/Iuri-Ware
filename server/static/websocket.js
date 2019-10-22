@@ -123,7 +123,8 @@ function connect() {
 	} else if (obj.GameStarted != null) {
 	    startRockPapiuroScissor();
 	} else if (obj.GameEnded != null) {
-	    console.log(obj.GameEnded);
+	    log("Game ended:");
+	    log("Points: " + JSON.stringify(obj.GameEnded))
         } else if (obj.Text != null) {
             log(obj.Text);
         } else if (obj.Error != null) {
@@ -141,11 +142,15 @@ function connect() {
 }
 
 function sendRockPapiuroScissor(button) {
+    name = name || "You";
+    const titleName = name[0].toUpperCase() + name.substring(1).toLowerCase();
+    log(name + " threw " + button.toLowerCase());
     send({ Game: { RockPapiuroScissor: button } });
 }
 
 function startRockPapiuroScissor() {
     document.querySelector("#RockPapiuroScissor").style = "";
+    log("RockPapiuroScissor starting, play your hand");
 }
 
 function disconnect() {
