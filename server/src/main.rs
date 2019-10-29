@@ -23,11 +23,11 @@ fn main() {
             .service(web::resource("/").route(web::get().to(|| {
                 // redirect to websocket.html
                 HttpResponse::Found()
-                    .header("LOCATION", "/static/websocket.html")
+                    .header("LOCATION", "/static/index.html")
                     .finish()
             })))
             // static resources
-            .service(fs::Files::new("/static/", "static/"));
+            .service(fs::Files::new("/static/", "../client/src/"));
 
         app
     })
