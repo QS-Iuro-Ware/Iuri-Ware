@@ -9,11 +9,11 @@ async function loadPage(page) {
 
   obj.setAttribute("data-name", page);
 
-  const newDiv = document.createElement("div");
-  newDiv.innerHTML = text;
+  // const newDiv = document.createElement("div");
+  // newDiv.innerHTML = text;
 
-  obj.innerHTML = "";
-  obj.appendChild(newDiv);
+  obj.innerHTML = text;
+  // obj.appendChild(newDiv);
   pages[page].load();
 }
 

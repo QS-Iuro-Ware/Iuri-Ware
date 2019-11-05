@@ -1,0 +1,95 @@
+body{
+  margin: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  flex-direction: column;}
+
+div.row{
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  justify-content: space-around;
+  align-items: center;
+}
+
+div.col{
+  display: flex;
+  flex-flow: column;
+}
+
+body[data-name="name"], body[data-name="join"]{
+  background-image: url("../img/bg-cororido.jpg");
+  background-size: 200px;
+}
+
+.centerform{
+  display: block;
+  background: white;
+  border: 1px solid black;
+  padding: 20px;
+}
+
+.visitor-count{
+  padding: 20px;
+  background: white;
+  border: 1px solid black;
+  margin-left: auto;
+  margin-right: 10vw;
+  text-transform: uppercase;
+}
+
+body[data-name="room"]{
+  background-image: url("../img/bg-azul.jpg");
+  background-size: 200px;
+}
+
+.row.roomrow {
+  flex: 1;
+  padding: 5vw;
+  width: 90vw;
+}
+
+.chat{
+  padding: 20px;
+  background: lightgray;
+  border: 1px solid black;
+}
+
+.chat #log{
+  background: white;
+}
+
+.score{
+  background: black;
+  padding: 4px 10px;
+  margin-top: 30px;
+}
+
+.score span{
+  display: inline-block;
+  width: 100%;
+  margin: 2px 0;
+}
+
+#game{
+  flex: 2;
+  background: white;
+  border: 1px solid;
+  margin: 50px;
+  display: flex;
+  justify-content: center;
+  height: 70vh;
+  align-items: center;}
+
+
+@-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
+@-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
+@keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
+
+#game img{
+  animation:spin 8s linear infinite;
+  height: 200px;
+}
