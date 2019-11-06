@@ -1,5 +1,22 @@
 const pages = {};
 
+async function dynamicFunction(func) {
+  const loader = new Promise((resolve, reject) => {
+    const interval = setInterval(() => {
+      const f = window[func];
+      if (typeof(f) === "function") {
+        clearInterval(interval);
+        resolve(f);
+      }
+    }, 50);
+  });
+
+  const timeout = new Promise((resolve, reject) => {
+    setTimeout(() => reject("Dynamic function load timedout"), 1500)
+  });
+  return Promise.race([loader, timeout]);
+}
+
 async function querySelector(selector) {
   const getter = new Promise((resolve, reject) => {
     const interval = setInterval(() => {
@@ -11,7 +28,9 @@ async function querySelector(selector) {
     }, 50);
   });
 
-  const timeout = new Promise((resolve, reject) => setTimeout(reject, 1500));
+  const timeout = new Promise((resolve, reject) => {
+    setTimeout(() => reject("Element getter timedout"), 1500)
+  });
   return Promise.race([getter, timeout]);
 }
 
@@ -36,22 +55,17 @@ async function loadPage(page) {
   // So all loaded elements can be queried with `querySelector`
   const loaded = await querySelector("#loaded");
 
-  await pages[page].load();
-}
-
-function registerPage(page, func) {
-  pages[page] = pages[page] || { load: null, events: [] };
-  pages[page].load = func;
+  eval(await (await fetch("js/" + page + ".js")).text());
 }
 
 async function registerEvent(page, selector, eventType, func) {
-  pages[page] = pages[page] || { load: null, events: [] };
-  pages[page].events.push({ selector, eventType, func });
+  pages[page] = pages[page] || [];
+  pages[page].push({ selector, eventType, func });
   (await querySelector(selector)).addEventListener(eventType, func);
 }
 
 async function unregister(page) {
-  for (const { selector, eventType, func } of pages[page].events) {
+  for (const { selector, eventType, func } of pages[page]) {
     (await querySelector(selector)).removeEventListener(eventType, func);
   }
   delete pages[page];

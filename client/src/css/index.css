@@ -58,7 +58,7 @@ body[data-name="room"]{
   border: 1px solid black;
 }
 
-.chat #log{
+.chat #chat{
   background: white;
 }
 

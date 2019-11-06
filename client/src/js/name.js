@@ -7,3 +7,5 @@ async function setName(ev) {
   await sendName(name);
   await loadPage("join");
 }
+
+registerName();

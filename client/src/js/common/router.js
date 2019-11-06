@@ -1,9 +1,3 @@
-document.addEventListener("DOMContentLoaded", async () => {
-  await registerPage("name", registerName);
-  await registerPage("join", registerJoin);
-  await registerPage("room", registerRoom);
-});
-
 async function route(obj) {
   console.log(obj);
 
@@ -18,12 +12,13 @@ async function route(obj) {
       select.appendChild(option);
     }
   } else if (obj.GameStarted != null) {
-    await startRockPapiuroScissor();
+    await (await dynamicFunction("startRockPapiuroScissor"))();
   } else if (obj.GameEnded != null) {
-    await log("Game ended:");
-    await log("Points: " + JSON.stringify(obj.GameEnded))
+    await (await dynamicFunction("log"))("Game ended:");
+    await (await dynamicFunction("log"))("Points: " + JSON.stringify(obj.GameEnded));
+    await (await dynamicFunction("endRockPapiuroScissor"))();
   } else if (obj.Text != null) {
-    await log(obj.Text);
+    await (await dynamicFunction("log"))(obj.Text);
   } else if (obj.Error != null) {
     alert(obj.Error);
   } else {

@@ -11,6 +11,9 @@ async function joinRoom(ev) {
 }
 
 async function createRoom(ev) {
-  await sendCreateRoom();
+  room = await extractValue("#new_group");
+  await sendCreateRoom(room);
   await loadPage("room");
 }
+
+registerJoin();
