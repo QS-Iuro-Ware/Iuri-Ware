@@ -1,15 +1,16 @@
-document.addEventListener("DOMContentLoaded", () => {
-  registerPage("name", registerName);
-  registerPage("join", registerJoin);
-  registerPage("room", registerRoom);
+document.addEventListener("DOMContentLoaded", async () => {
+  await registerPage("name", registerName);
+  await registerPage("join", registerJoin);
+  await registerPage("room", registerRoom);
 });
 
-function route(obj) {
+async function route(obj) {
   console.log(obj);
+
   if (obj.Rooms != null) {
-    const select = document.querySelector("#group");
+    const select = await querySelector("#group");
     select.innerHTML = "";
-  
+
     for (const room of obj.Rooms) {
       const option = document.createElement("option");
       option.value = room;
@@ -17,12 +18,12 @@ function route(obj) {
       select.appendChild(option);
     }
   } else if (obj.GameStarted != null) {
-    startRockPapiuroScissor();
+    await startRockPapiuroScissor();
   } else if (obj.GameEnded != null) {
-    log("Game ended:");
-    log("Points: " + JSON.stringify(obj.GameEnded))
+    await log("Game ended:");
+    await log("Points: " + JSON.stringify(obj.GameEnded))
   } else if (obj.Text != null) {
-    log(obj.Text);
+    await log(obj.Text);
   } else if (obj.Error != null) {
     alert(obj.Error);
   } else {

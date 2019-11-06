@@ -1,44 +1,33 @@
-function registerRoom() {
-  registerEvent("room", "#send", "click", createMessage);
-  registerEvent("room", "#text", "keyup", sendOnEnter);
+async function registerRoom() {
+  await registerEvent("room", "#send", "click", createMessage);
+  await registerEvent("room", "#text", "keyup", sendOnEnter);
 }
 
-function createMessage(ev) {
-  sendMessage();
-  document.queryElement("#text").focus();
+async function createMessage(ev) {
+  await sendMessage();
+  (await querySelector("#text")).focus();
 }
 
-function sendOnEnter(ev) {
+async function sendOnEnter(ev) {
   if (ev.keyCode === 13) {
-    document.querySelector("#send").click();
+    (await querySelector("#send")).click();
     ev.preventDefault();
   }
 }
 
-function sendRockPapiuroScissor(button) {
-  log(titleCase(name || "You") + " threw " + button.toLowerCase());
-  sendRockPapiuroScissorInput(button);
+async function sendRockPapiuroScissor(button) {
+  await log(titleCase(name || "You") + " threw " + button.toLowerCase());
+  await sendRockPapiuroScissorInput(button);
 }
 
-function startRockPapiuroScissor() {
-  const game = document.querySelector("#RockPapiuroScissor");
-  if (game === null) {
-    setTimeout(() => startRockPapiuroScissor(), 100);
-    return;
-  }
-
-  log("RockPapiuroScissor starting, play your hand");
-  game.style = "";
+async function startRockPapiuroScissor() {
+  await log("RockPapiuroScissor starting, play your hand");
+  (await querySelector("#RockPapiuroScissor")).style = "";
 }
 
-function log(msg) {
-  const control = document.querySelector("#log");
-  if (control === null) {
-    setTimeout(() => log(msg), 100);
-    return;
-  }
-
-  control.appendChild(document.createTextNode(msg)); 
+async function log(msg) {
+  const control = await querySelector("#log");
+  control.appendChild(document.createTextNode(msg));
   control.innerHTML = control.innerHTML + "<br/>";
   control.scrollTop = control.scrollTop + 1000;
 }

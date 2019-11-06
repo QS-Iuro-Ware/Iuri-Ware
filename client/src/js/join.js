@@ -1,16 +1,16 @@
-function registerJoin() {
-  registerEvent("join", "#join_room", "click", joinRoom);
-  registerEvent("join", "#create_room", "click", createRoom);
+async function registerJoin() {
+  await registerEvent("join", "#join_room", "click", joinRoom);
+  await registerEvent("join", "#create_room", "click", createRoom);
   sendListRooms();
 }
 
-function joinRoom(ev) {
-  room = extractValue("#group");
-  sendJoinRoom(room);
-  loadPage("room");
+async function joinRoom(ev) {
+  room = await extractValue("#group");
+  await sendJoinRoom(room);
+  await loadPage("room");
 }
 
-function createRoom(ev) {
-  sendCreateRoom();
-  loadPage("room");
+async function createRoom(ev) {
+  await sendCreateRoom();
+  await loadPage("room");
 }

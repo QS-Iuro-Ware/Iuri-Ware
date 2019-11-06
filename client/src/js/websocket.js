@@ -11,32 +11,33 @@ let conn = null;
 let name = null;
 let group = null;
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   // Ping
   setInterval(() => { try { conn.send(ping) } catch {} }, 5000);
 
-  // Reconnect
-  setInterval(() => { if (conn === null) connect() }, 3000);
-  connect();
+  await connect();
+
+  // Reconnect automatically
+  setInterval(async () => { if (conn === null) await connect() }, 3000);
 });
 
-function connect() {
+async function connect() {
   conn = new WebSocket(uri);
   conn.binaryType = "arraybuffer";
-  conn.onmessage = (e) => route(parseJson(e.data));
+  conn.onmessage = async (e) => await route(parseJson(e.data));
   conn.onclose = () => conn = null;
 
   if (name !== null) {
-    sendName(name)
+    await sendName(name)
   } else {
-    loadPage("name");
+    await loadPage("name");
     return;
   }
 
   if (group != null) {
-    sendJoinRoom(group);
+    await sendJoinRoom(group);
   } else {
-    loadPage("join");
+    await loadPage("join");
   }
 }
 
