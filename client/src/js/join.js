@@ -1,15 +1,16 @@
 function registerJoin() {
   registerEvent("join", "#join_room", "click", joinRoom);
   registerEvent("join", "#create_room", "click", createRoom);
-  conn.send('"ListRooms"');
+  sendListRooms();
 }
 
 function joinRoom(ev) {
-  send({ Join: extractValue("#group") })
+  room = extractValue("#group");
+  sendJoinRoom(room);
   loadPage("room");
 }
 
 function createRoom(ev) {
-  send({ Join: extractValue("#new_group") });
+  sendCreateRoom();
   loadPage("room");
 }

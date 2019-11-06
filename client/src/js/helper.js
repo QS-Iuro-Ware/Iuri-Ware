@@ -2,19 +2,25 @@ const pages = {};
 
 async function loadPage(page) {
   const obj = document.body;
-  const text = await (await fetch("html/" + page + ".html")).text();
+  let text = await (await fetch("html/" + page + ".html")).text();
+  text += "<div id='loaded'></div>";
 
   if (obj.getAttribute("data-name"))
     unregister(obj.getAttribute("data-name"));
 
   obj.setAttribute("data-name", page);
+  obj.innerHTML = "";
 
-  // const newDiv = document.createElement("div");
-  // newDiv.innerHTML = text;
+  const newDiv = document.createElement("div");
+  newDiv.innerHTML = text;
+  obj.appendChild(newDiv);
 
-  obj.innerHTML = text;
-  // obj.appendChild(newDiv);
-  pages[page].load();
+  const interval = setInterval(() => {
+    if (document.getElementById("loaded") !== null) {
+      pages[page].load();
+      clearInterval(interval);
+    }
+  }, 100);
 }
 
 function registerPage(page, func) {
@@ -45,4 +51,8 @@ function extractValue(selector) {
 function send(obj) {
   console.log(obj);
   conn.send(JSON.stringify(obj));
+}
+
+function titleCase(text) {
+  return text[0].toUpperCase() + text.substring(1).toLowerCase();
 }

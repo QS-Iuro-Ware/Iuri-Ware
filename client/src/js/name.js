@@ -3,6 +3,7 @@ function registerName() {
 }
 
 function setName(ev) {
-  send({ Name: extractValue("#name") });
+  name = extractValue("#name");
+  sendName(name);
   loadPage("join");
 }

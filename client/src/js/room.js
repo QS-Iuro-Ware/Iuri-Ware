@@ -1,35 +1,38 @@
 function registerRoom() {
-  registerEvent("room", "#send", "click", sendMessage);
+  registerEvent("room", "#send", "click", createMessage);
   registerEvent("room", "#text", "keyup", sendOnEnter);
 }
 
-function sendMessage(ev) {
-  send({ Message: extractValue("#text") });
+function createMessage(ev) {
+  sendMessage();
   document.queryElement("#text").focus();
 }
 
 function sendOnEnter(ev) {
   if (ev.keyCode === 13) {
-      document.querySelector("#send").click();
-      ev.preventDefault();
+    document.querySelector("#send").click();
+    ev.preventDefault();
   }
 }
 
 function sendRockPapiuroScissor(button) {
-  name = name || "You";
-  const titleName = name[0].toUpperCase() + name.substring(1).toLowerCase();
-  log(name + " threw " + button.toLowerCase());
-  send({ Game: { RockPapiuroScissor: button } });
+  log(titleCase(name || "You") + " threw " + button.toLowerCase());
+  sendRockPapiuroScissorInput(button);
 }
 
 function startRockPapiuroScissor() {
-  document.querySelector("#RockPapiuroScissor").style = "";
+  const game = document.querySelector("#RockPapiuroScissor");
+  if (game === null) {
+    setTimeout(() => startRockPapiuroScissor(), 100);
+    return;
+  }
+
   log("RockPapiuroScissor starting, play your hand");
+  game.style = "";
 }
 
 function log(msg) {
   const control = document.querySelector("#log");
-
   if (control === null) {
     setTimeout(() => log(msg), 100);
     return;

@@ -6,10 +6,10 @@ use std::{borrow::Cow, fmt, fmt::Debug, fmt::Formatter, time::Duration, time::In
 
 use crate::{handle_text, prelude::Response, prelude::*};
 
-/// How often heartbeat pings are sent
+/// How often heartbeat pings are checked for
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 /// How long before lack of client response causes a timeout
-const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
+const CLIENT_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Each websocket connection generates a session that exists until it's closed
 pub struct IuroSession {
