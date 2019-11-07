@@ -1,3 +1,5 @@
+'use strict'
+
 async function route(obj) {
   console.log(obj);
 

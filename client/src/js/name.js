@@ -1,3 +1,5 @@
+'use strict'
+
 async function registerName() {
   await registerEvent("name", "#set_name", "click", setName);
 }

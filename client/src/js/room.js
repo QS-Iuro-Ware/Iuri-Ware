@@ -1,3 +1,5 @@
+'use strict'
+
 async function registerRoom() {
   await registerEvent("room", "#send", "click", createMessage);
   await registerEvent("room", "#text", "keyup", sendOnEnter);

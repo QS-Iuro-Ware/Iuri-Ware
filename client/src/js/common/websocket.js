@@ -29,13 +29,12 @@ async function connect() {
 
   if (name !== null) {
     sendName(name)
-    await loadPage("join");
   } else {
     await loadPage("name");
     return;
   }
 
-  if (group != null) {
+  if (group !== null) {
     sendJoinRoom(group);
     await loadPage("group");
   } else {

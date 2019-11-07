@@ -1,3 +1,5 @@
+'use strict'
+
 const sendListRooms = () => conn.send('"ListRooms"');
 
 const sendName = (name) => send({ Name: name });

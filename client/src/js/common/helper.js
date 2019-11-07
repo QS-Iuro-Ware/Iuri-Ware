@@ -1,3 +1,5 @@
+'use strict'
+
 const pages = {};
 
 async function dynamicFunction(func) {

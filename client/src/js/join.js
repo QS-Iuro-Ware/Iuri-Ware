@@ -1,3 +1,5 @@
+'use strict'
+
 async function registerJoin() {
   await registerEvent("join", "#join_room", "click", joinRoom);
   await registerEvent("join", "#create_room", "click", createRoom);
