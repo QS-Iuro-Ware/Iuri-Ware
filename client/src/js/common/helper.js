@@ -1,37 +1,17 @@
 const pages = {};
 
 async function dynamicFunction(func) {
-  const loader = new Promise((resolve, reject) => {
-    const interval = setInterval(() => {
-      const f = window[func];
-      if (typeof(f) === "function") {
-        clearInterval(interval);
-        resolve(f);
-      }
-    }, 50);
-  });
-
-  const timeout = new Promise((resolve, reject) => {
-    setTimeout(() => reject("Dynamic function load timedout"), 1500)
-  });
-  return Promise.race([loader, timeout]);
+  const extract = () => window[func];
+  const check = (data) => typeof(data) === "function";
+  const rejectionMessage = "Dynamic function load timedout";
+  return buildRetry(extract, check, rejectionMessage);
 }
 
 async function querySelector(selector) {
-  const getter = new Promise((resolve, reject) => {
-    const interval = setInterval(() => {
-      const element = document.querySelector(selector);
-      if (element !== null) {
-        clearInterval(interval);
-        resolve(element);
-      }
-    }, 50);
-  });
-
-  const timeout = new Promise((resolve, reject) => {
-    setTimeout(() => reject("Element getter timedout"), 1500)
-  });
-  return Promise.race([getter, timeout]);
+  const extract = () => document.querySelector(selector);
+  const check = (data) => data !== null;
+  const rejectionMessage = "Element getter timedout";
+  return buildRetry(extract, check, rejectionMessage);
 }
 
 async function loadPage(page) {
@@ -40,8 +20,8 @@ async function loadPage(page) {
   // Hack to allow this function to block until html elements are loaded
   text += "<div id='loaded'></div>";
 
-  if (obj.getAttribute("data-name"))
-    await unregister(obj.getAttribute("data-name"));
+  const dataName = obj.getAttribute("data-name");
+  if (dataName) await unregisterPage(dataName);
 
   obj.setAttribute("data-name", page);
   obj.innerHTML = "";
@@ -51,9 +31,9 @@ async function loadPage(page) {
   obj.appendChild(newDiv);
 
   // Don't remove this line
-  // It ensures function is blocked until last element is loaded,
-  // So all loaded elements can be queried with `querySelector`
-  const loaded = await querySelector("#loaded");
+  // It ensures this function is blocked until all elements are loaded,
+  // So they can be queried with `querySelector` defined above
+  await querySelector("#loaded");
 
   eval(await (await fetch("js/" + page + ".js")).text());
 }
@@ -64,7 +44,7 @@ async function registerEvent(page, selector, eventType, func) {
   (await querySelector(selector)).addEventListener(eventType, func);
 }
 
-async function unregister(page) {
+async function unregisterPage(page) {
   for (const { selector, eventType, func } of pages[page]) {
     (await querySelector(selector)).removeEventListener(eventType, func);
   }
@@ -85,4 +65,29 @@ function send(obj) {
 
 function titleCase(text) {
   return text[0].toUpperCase() + text.substring(1).toLowerCase();
+}
+
+function parseJson(msg) {
+  try {
+    return JSON.parse(msg);
+  } catch (e) {
+    alert("Unable to parse received message: (" + e + ") " + msg);
+  }
+}
+
+async function buildRetry(extract, check, rejectionMessage) {
+  const loader = new Promise((resolve, reject) => {
+    const interval = setInterval(() => {
+      const data = extract();
+      if (check(data)) {
+        clearInterval(interval);
+        resolve(data);
+      }
+    }, 50);
+  });
+
+  const timeout = new Promise((resolve, reject) => {
+    setTimeout(() => reject(rejectionMessage), 1500);
+  });
+  return Promise.race([loader, timeout]);
 }

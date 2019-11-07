@@ -4,7 +4,7 @@ async function registerName() {
 
 async function setName(ev) {
   name = await extractValue("#name");
-  await sendName(name);
+  sendName(name);
   await loadPage("join");
 }
 

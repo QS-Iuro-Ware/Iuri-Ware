@@ -4,7 +4,7 @@ async function registerRoom() {
 }
 
 async function createMessage(ev) {
-  await sendMessage();
+  sendMessage(await extractValue("#text"));
   (await querySelector("#text")).focus();
 }
 
@@ -15,10 +15,11 @@ async function sendOnEnter(ev) {
   }
 }
 
-// If a function must be used from html or `router` you must set it as a `window` attribute
+// If a function must be used from html or `router` you must set it as a `window` attribute,
+// They will be leaked, but we don't care (call it caching)
 window.sendRockPapiuroScissor = async (button) => {
   await log(titleCase(name || "You") + " threw " + button.toLowerCase());
-  await sendRockPapiuroScissorInput(button);
+  sendRockPapiuroScissorInput(button);
 }
 
 window.startRockPapiuroScissor = async () => {

@@ -6,13 +6,13 @@ async function registerJoin() {
 
 async function joinRoom(ev) {
   room = await extractValue("#group");
-  await sendJoinRoom(room);
+  sendJoinRoom(room);
   await loadPage("room");
 }
 
 async function createRoom(ev) {
   room = await extractValue("#new_group");
-  await sendCreateRoom(room);
+  sendJoinRoom(room);
   await loadPage("room");
 }
 

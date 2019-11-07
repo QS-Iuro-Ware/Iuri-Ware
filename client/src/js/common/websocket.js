@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await connect();
 
-  // Reconnect automatically
+  // Reconnects automatically
   setInterval(async () => { if (conn === null) await connect() }, 3000);
 });
 
@@ -28,23 +28,17 @@ async function connect() {
   conn.onclose = () => conn = null;
 
   if (name !== null) {
-    await sendName(name)
+    sendName(name)
+    await loadPage("join");
   } else {
     await loadPage("name");
     return;
   }
 
   if (group != null) {
-    await sendJoinRoom(group);
+    sendJoinRoom(group);
+    await loadPage("group");
   } else {
     await loadPage("join");
-  }
-}
-
-function parseJson(msg) {
-  try {
-    return JSON.parse(msg);
-  } catch (e) {
-    alert("Unable to parse received message: (" + e + ") " + msg);
   }
 }
