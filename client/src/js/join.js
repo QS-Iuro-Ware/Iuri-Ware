@@ -1,19 +1,26 @@
-'use strict'
-
-async function registerJoin() {
-  await registerEvent("join", "#join_room", "click", joinRoom);
-  await registerEvent("join", "#create_room", "click", createRoom);
+function registerJoin() {
+  registerEvent("join", "#join_room", "click", joinRoom);
+  registerEvent("join", "#create_room", "click", createRoom);
   sendListRooms();
+
+  monitorQueue("join", "rooms", appendRoomOption);
+}
+
+function appendRoomOption(room) {
+  const option = document.createElement("option");
+  option.value = room;
+  option.innerText = room;
+  document.querySelector("#room").appendChild(option);
 }
 
 async function joinRoom(ev) {
-  room = await extractValue("#group");
+  room = extractValue("#room");
   sendJoinRoom(room);
   await loadPage("room");
 }
 
 async function createRoom(ev) {
-  room = await extractValue("#new_group");
+  room = extractValue("#new_room");
   sendJoinRoom(room);
   await loadPage("room");
 }

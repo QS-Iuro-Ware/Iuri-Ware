@@ -1,26 +1,22 @@
 'use strict'
 
+// The router can only talk with the document through queues
+// Append it to the queue here and monitor the queue in the page's dynamic js
 async function route(obj) {
   console.log(obj);
 
   if (obj.Rooms != null) {
-    const select = await querySelector("#group");
-    select.innerHTML = "";
-
-    for (const room of obj.Rooms) {
-      const option = document.createElement("option");
-      option.value = room;
-      option.innerText = room;
-      select.appendChild(option);
-    }
+    data.rooms = obj.Rooms;
   } else if (obj.GameStarted != null) {
-    await (await dynamicFunction("startRockPapiuroScissor"))();
+    // The timeout allows games to end before starting another,
+    // so we don't race and close the game that just started
+    setTimeout(() => data.startGame.push(obj.GameStarted), 100);
   } else if (obj.GameEnded != null) {
-    await (await dynamicFunction("log"))("Game ended:");
-    await (await dynamicFunction("log"))("Points: " + JSON.stringify(obj.GameEnded));
-    await (await dynamicFunction("endRockPapiuroScissor"))();
+    data.messages.push("Game ended:");
+    data.messages.push("Points: " + JSON.stringify(obj.GameEnded));
+    data.endGame.push(obj.GameEnded);
   } else if (obj.Text != null) {
-    await (await dynamicFunction("log"))(obj.Text);
+    data.messages.push(obj.Text);
   } else if (obj.Error != null) {
     alert(obj.Error);
   } else {

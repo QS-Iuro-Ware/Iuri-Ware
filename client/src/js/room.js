@@ -1,41 +1,66 @@
-'use strict'
+function registerRoom() {
+  registerEvent("room", "#send", "click", createMessage);
+  registerEvent("room", "#text", "keyup", sendOnEnter);
 
-async function registerRoom() {
-  await registerEvent("room", "#send", "click", createMessage);
-  await registerEvent("room", "#text", "keyup", sendOnEnter);
+  monitorQueue("room", "messages", showMessage);
+  monitorQueue("room", "startGame", startGame);
+  monitorQueue("room", "endGame", stopGame);
+  monitorQueue("room", "gameInput", gameInput);
 }
 
-async function createMessage(ev) {
-  sendMessage(await extractValue("#text"));
-  (await querySelector("#text")).focus();
+function createMessage(ev) {
+  sendMessage(extractValue("#text"));
+  document.querySelector("#text").focus();
 }
 
-async function sendOnEnter(ev) {
+function sendOnEnter(ev) {
   if (ev.keyCode === 13) {
-    (await querySelector("#send")).click();
+    createMessage(ev);
     ev.preventDefault();
   }
 }
 
-// If a function must be used from html or `router` you must set it as a `window` attribute,
-// They will be leaked, but we don't care (call it caching)
-window.sendRockPapiuroScissor = async (button) => {
-  await log(titleCase(name || "You") + " threw " + button.toLowerCase());
+function gameInput({ game, input }) {
+  switch (game) {
+  case "RockPapiuroScissor":
+    sendRockPapiuroScissor(input);
+    break;
+  }
+}
+
+function sendRockPapiuroScissor(button) {
+  showMessage(titleCase(name || "You") + " threw " + button.toLowerCase());
   sendRockPapiuroScissorInput(button);
 }
 
-window.startRockPapiuroScissor = async () => {
-  await log("RockPapiuroScissor starting, play your hand");
-  (await querySelector("#RockPapiuroScissor")).style = "";
+function startGame(game) {
+  switch (game) {
+  case "RockPapiuroScissor":
+    startRockPapiuroScissor();
+    break;
+  }
 }
 
-window.stopRockPapiuroScissor = async () => {
-  await log("RockPapiuroScissor ended");
-  (await querySelector("#RockPapiuroScissor")).style = "display: none;";
+function startRockPapiuroScissor() {
+  showMessage("RockPapiuroScissor starting, play your hand");
+  document.querySelector("#RockPapiuroScissor").style = "";
 }
 
-window.log = async (msg) => {
-  const control = await querySelector("#chat");
+function stopGame(game) {
+  switch (game) {
+  case "RockPapiuroScissor":
+    stopRockPapiuroScissor();
+    break;
+  }
+}
+
+function stopRockPapiuroScissor() {
+  showMessage("RockPapiuroScissor ended");
+  document.querySelector("#RockPapiuroScissor").style = "display: none;";
+}
+
+function showMessage(msg) {
+  const control = document.querySelector("#chat");
   control.appendChild(document.createTextNode(msg));
   control.innerHTML = control.innerHTML + "<br/>";
   control.scrollTop = control.scrollTop + 1000;

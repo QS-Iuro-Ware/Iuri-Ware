@@ -1,10 +1,10 @@
 'use strict'
 
-const sendListRooms = () => conn.send('"ListRooms"');
+const sendListRooms = () => { try { conn.send('"ListRooms"') } catch {} };
 
 const sendName = (name) => send({ Name: name });
 
-const sendJoinRoom = (group) => send({ Join: group });
+const sendJoinRoom = (room) => send({ Join: room });
 
 const sendMessage = (msg) => send({ Message: msg });
 

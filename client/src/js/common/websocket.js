@@ -9,7 +9,7 @@ ping[0] = 0x9;
 // Hell yeah global state
 let conn = null;
 let name = null;
-let group = null;
+let room = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
   // Ping
@@ -25,19 +25,20 @@ async function connect() {
   conn = new WebSocket(uri);
   conn.binaryType = "arraybuffer";
   conn.onmessage = async (e) => await route(parseJson(e.data));
+  conn.onopen = async () => {
+    if (name !== null) {
+      sendName(name)
+    } else {
+      await loadPage("name");
+      return;
+    }
+
+    if (room !== null) {
+      sendJoinRoom(room);
+      await loadPage("room");
+    } else {
+      await loadPage("join");
+    }
+  }
   conn.onclose = () => conn = null;
-
-  if (name !== null) {
-    sendName(name)
-  } else {
-    await loadPage("name");
-    return;
-  }
-
-  if (group !== null) {
-    sendJoinRoom(group);
-    await loadPage("group");
-  } else {
-    await loadPage("join");
-  }
 }

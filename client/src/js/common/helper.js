@@ -1,20 +1,7 @@
 'use strict'
 
 const pages = {};
-
-async function dynamicFunction(func) {
-  const extract = () => window[func];
-  const check = (data) => typeof(data) === "function";
-  const rejectionMessage = "Dynamic function load timedout";
-  return buildRetry(extract, check, rejectionMessage);
-}
-
-async function querySelector(selector) {
-  const extract = () => document.querySelector(selector);
-  const check = (data) => data !== null;
-  const rejectionMessage = "Element getter timedout";
-  return buildRetry(extract, check, rejectionMessage);
-}
+const data = { messages: [], startGame: [], endGame: [], gameInput: [], rooms: [] }
 
 async function loadPage(page) {
   const obj = document.body;
@@ -23,7 +10,7 @@ async function loadPage(page) {
   text += "<div id='loaded'></div>";
 
   const dataName = obj.getAttribute("data-name");
-  if (dataName) await unregisterPage(dataName);
+  if (dataName !== null) unregisterPage(dataName);
 
   obj.setAttribute("data-name", page);
   obj.innerHTML = "";
@@ -34,27 +21,40 @@ async function loadPage(page) {
 
   // Don't remove this line
   // It ensures this function is blocked until all elements are loaded,
-  // So they can be queried with `querySelector` defined above
+  // So the dynamic js can manipulate them
   await querySelector("#loaded");
 
   eval(await (await fetch("js/" + page + ".js")).text());
 }
 
-async function registerEvent(page, selector, eventType, func) {
+function monitorQueue(page, key, func) {
+  const interval = setInterval(() => {
+    if (data[key].length > 0) func(data[key].shift());
+  }, 50);
+
   pages[page] = pages[page] || [];
-  pages[page].push({ selector, eventType, func });
-  (await querySelector(selector)).addEventListener(eventType, func);
+  pages[page].push({ interval });
 }
 
-async function unregisterPage(page) {
-  for (const { selector, eventType, func } of pages[page]) {
-    (await querySelector(selector)).removeEventListener(eventType, func);
+function registerEvent(page, selector, eventType, func) {
+  pages[page] = pages[page] || [];
+  pages[page].push({ selector, eventType, func });
+  document.querySelector(selector).addEventListener(eventType, func);
+}
+
+function unregisterPage(page) {
+  for (const { selector, eventType, func, interval } of pages[page]) {
+    if (interval !== undefined) {
+      clearInterval(interval);
+    } else {
+      document.querySelector(selector).removeEventListener(eventType, func);
+    }
   }
   delete pages[page];
 }
 
-async function extractValue(selector) {
-  const element = await querySelector(selector);
+function extractValue(selector) {
+  const element = document.querySelector(selector);
   const value = element.value;
   element.value = "";
   return value;
@@ -62,7 +62,10 @@ async function extractValue(selector) {
 
 function send(obj) {
   console.log(obj);
-  conn.send(JSON.stringify(obj));
+  const json = JSON.stringify(obj);
+  try {
+    conn.send(json);
+  } catch {}
 }
 
 function titleCase(text) {
@@ -77,19 +80,20 @@ function parseJson(msg) {
   }
 }
 
-async function buildRetry(extract, check, rejectionMessage) {
-  const loader = new Promise((resolve, reject) => {
+async function querySelector(selector) {
+  const getter = new Promise((resolve, reject) => {
     const interval = setInterval(() => {
-      const data = extract();
-      if (check(data)) {
+      const data = document.querySelector(selector);
+      if (data !== null) {
         clearInterval(interval);
         resolve(data);
       }
     }, 50);
   });
 
+  const rejectionMessage = "Element getter timedout";
   const timeout = new Promise((resolve, reject) => {
     setTimeout(() => reject(rejectionMessage), 1500);
   });
-  return Promise.race([loader, timeout]);
+  return Promise.race([getter, timeout]);
 }

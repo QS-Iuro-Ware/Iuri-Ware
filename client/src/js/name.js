@@ -1,11 +1,9 @@
-'use strict'
-
-async function registerName() {
-  await registerEvent("name", "#set_name", "click", setName);
+function registerName() {
+  registerEvent("name", "#set_name", "click", setName);
 }
 
 async function setName(ev) {
-  name = await extractValue("#name");
+  name = extractValue("#name");
   sendName(name);
   await loadPage("join");
 }
