@@ -5,6 +5,8 @@ use thiserror::Error;
 pub enum IuroError {
     #[error("No game currently running")]
     NoGameRunning,
+    #[error("Tried to play invalid game")]
+    InvalidGame,
     #[error("Must join room first")]
     MustJoinRoom,
     #[error("Unable to parse message")]

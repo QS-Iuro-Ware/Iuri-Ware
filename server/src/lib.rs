@@ -21,6 +21,7 @@ mod prelude {
     pub use crate::room::{Room, RoomSlot};
     pub use crate::session::IuroSession;
     pub use crate::{IuroError, IuroServer};
+    pub use crate::games::prelude::*;
     pub use log::{debug, error, info, trace, warn};
 }
 

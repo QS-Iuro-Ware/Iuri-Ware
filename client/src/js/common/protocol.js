@@ -11,3 +11,7 @@ const sendMessage = (msg) => send({ Message: msg });
 const sendRockPapiuroScissorInput = (button) => send({
   Game: { RockPapiuroScissor: button }
 });
+
+const sendTheRightIuroInput = (vector) => send({
+  Game: { TheRightIuro: vector }
+});

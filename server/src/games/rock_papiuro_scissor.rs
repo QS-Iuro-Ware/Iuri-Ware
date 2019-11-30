@@ -1,5 +1,15 @@
 use crate::prelude::*;
+use actix::prelude::*;
+use serde::{Deserialize};
 use std::collections::HashMap;
+
+/// Input options for `RockPapiuroScissor`
+#[derive(Deserialize, Copy, Clone, Message, Debug)]
+pub enum RockPapiuroScissorInput {
+    Rock,
+    Papiuro,
+    Scissor,
+}
 
 impl RockPapiuroScissorInput {
     /// Returns if user wins against other
@@ -56,8 +66,8 @@ impl<'a> Update<'a> {
                     .ok_or(IuroError::AddrNotFound(*id))?;
 
                 slot.wins += 1;
-                ret = true;
             }
+            ret = true;
         }
         Ok(ret)
     }

@@ -1,4 +1,4 @@
-use crate::IuroError;
+use crate::prelude::*;
 use actix::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::HashMap};
@@ -33,14 +33,6 @@ pub enum Command {
     Game(GameInput),
 }
 
-/// Input options for `RockPapiuroScissor`
-#[derive(Deserialize, Copy, Clone, Message, Debug)]
-pub enum RockPapiuroScissorInput {
-    Rock,
-    Papiuro,
-    Scissor,
-}
-
 /// Attach user to its `GameInput`
 #[derive(Deserialize, Message, Debug)]
 #[rtype("Result<(), IuroError>")]
@@ -48,26 +40,6 @@ pub struct UserGameInput {
     pub id: usize,
     pub room: String,
     pub input: GameInput,
-}
-
-/// Game input sent from user
-#[derive(Deserialize, Message, Debug)]
-pub enum GameInput {
-    RockPapiuroScissor(RockPapiuroScissorInput),
-}
-
-/// Each game holds its own state
-#[derive(Debug)]
-pub enum GameState {
-    /// Holds each user's input
-    RockPapiuroScissor(HashMap<usize, RockPapiuroScissorInput>),
-}
-
-/// Enumerates available games
-#[derive(Serialize, Copy, Clone, Debug)]
-pub enum Game {
-    /// Rock Paper Scissors Iuro's version
-    RockPapiuroScissor,
 }
 
 /// Message to be broadcasted to a room

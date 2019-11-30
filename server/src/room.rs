@@ -52,8 +52,9 @@ impl Room {
         let game = self.games.remove(0);
         self.games.push(random());
 
-        self.game = Some(match game {
+        self.game = Some(match game.clone() {
             Game::RockPapiuroScissor => GameState::RockPapiuroScissor(HashMap::default()),
+            Game::TheRightIuro(state) => GameState::TheRightIuro((state, Default::default()))
         });
 
         game
@@ -65,11 +66,19 @@ impl Room {
         user_id: usize,
         input: GameInput,
     ) -> Result<HashMap<String, usize>, IuroError> {
-        let has_ended = match (self.game.as_mut(), input) {
+        let has_ended = match (self.game.as_mut(), &input) {
             (Some(GameState::RockPapiuroScissor(state)), GameInput::RockPapiuroScissor(input)) => {
                 let update = games::rock_papiuro_scissor::Update {
                     user_id,
-                    input,
+                    input: *input,
+                    state,
+                };
+                update.consume(&mut self.sessions)?
+            }
+            (Some(GameState::TheRightIuro(state)), GameInput::TheRightIuro(input)) => {
+                let update = games::the_right_iuro::Update {
+                    user_id,
+                    input: input.clone(),
                     state,
                 };
                 update.consume(&mut self.sessions)?
@@ -77,6 +86,10 @@ impl Room {
             (None, _) => {
                 warn!("User sent game input when it wasn't possible");
                 return Err(IuroError::NoGameRunning);
+            }
+            _ => {
+                warn!("User sent game input when it wasn't possible");
+                return Err(IuroError::InvalidGame);
             }
         };
 
@@ -112,14 +125,16 @@ impl Room {
 
 impl Distribution<Game> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Game {
-        let game = match rng.gen_range(0, 1) {
-            _ => Game::RockPapiuroScissor,
+        let game = match rng.gen_range(0, 2) {
+            0 => Game::RockPapiuroScissor,
+            _ => Game::TheRightIuro((0..8).map(|_| random()).collect()),
         };
 
         // This is here so the code breaks whenever new variants are added,
         // since the random generation above will only break silently at runtime
         match game {
             Game::RockPapiuroScissor => game,
+            game @ Game::TheRightIuro(_) => game,
         }
     }
 }
