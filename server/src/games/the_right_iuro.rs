@@ -21,7 +21,7 @@ impl<'a> Update<'a> {
         if state.1.len() == sessions.len() {
             // Computes points for each user
             let points = state.1.iter().map(|(id, input)| {
-                (id, (input == &state.0) as u8)
+                (id, (&input[0] == &state.0[0]) as u8)
             });
 
             // Selects only winning users

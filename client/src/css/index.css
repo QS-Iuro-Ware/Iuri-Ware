@@ -84,6 +84,24 @@ body[data-name="room"]{
   height: 70vh;
   align-items: center;}
 
+#TheRightIuro{
+  flex: 2;
+  background: blue;
+  border: 5px solid red;
+  margin: 50px;
+  justify-content: center;
+  height: 70vh;
+  align-items: center;
+  display: grid;
+  /* grid-template-columns: minmax(150px, 200px) minmax(150px, 200px) minmax(150px, 200px); */
+}
+
+#TheRightIuro #img{
+  width: 128px;
+  height: 128px;
+  margin: auto;
+}
+
 
 @-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
 @-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
