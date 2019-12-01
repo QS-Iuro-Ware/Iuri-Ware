@@ -56,7 +56,7 @@ impl<'a> Update<'a> {
                 .clone()
                 .map(|(_id, points)| points)
                 .max()
-                .unwrap_or(0);
+                .unwrap_or(1);
 
             // Selects only winning users
             for (id, _) in points.filter(|(_, points)| *points >= max) {

@@ -12,8 +12,7 @@ async function route(obj) {
     // so we don't race and close the game that just started
     setTimeout(() => data.startGame.push(obj.GameStarted), 100);
   } else if (obj.GameEnded != null) {
-    data.messages.push("Game " + obj.GameEnded[0] + " ended:");
-    data.messages.push("Points: " + JSON.stringify(obj.GameEnded[1]));
+    data.messages.push("Game " + obj.GameEnded[0] + " ended");
     data.endGame.push(obj.GameEnded[0]);
   } else if (obj.Text != null) {
     data.messages.push(obj.Text);

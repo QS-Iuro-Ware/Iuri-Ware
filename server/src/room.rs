@@ -130,7 +130,16 @@ impl Distribution<Game> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Game {
         let game = match rng.gen_range(0, 2) {
             0 => Game::RockPapiuroScissor,
-            _ => Game::TheRightIuro((0..8).map(|_| random()).collect()),
+            _ => {
+                let mut values = Vec::with_capacity(8);
+                while values.len() < 8 {
+                    let value = rng.gen_range(0, 36);
+                    if !values.contains(value) {
+                        values.push(value);
+                    }
+                }
+                Game::TheRightIuro(values)
+            }
         };
 
         // This is here so the code breaks whenever new variants are added,
