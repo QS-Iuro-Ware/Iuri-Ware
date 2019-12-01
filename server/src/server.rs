@@ -123,12 +123,12 @@ impl Handler<UserGameInput> for IuroServer {
             .rooms
             .get_mut(&input.room)
             .ok_or_else(|| IuroError::NoRoom(input.room.clone()))?;
-        let wins = room.update(input.id, input.input)?;
+        let (name, wins) = room.update(input.id, input.input)?;
 
         if !wins.is_empty() {
             debug!("Game ended: {:?}", wins);
             let game = room.start_game();
-            self.send_message(&input.room, &Broadcast::GameEnded(wins))?;
+            self.send_message(&input.room, &Broadcast::GameEnded((name, wins)))?;
             self.send_message(&input.room, &Broadcast::GameStarted(game))?;
         }
         Ok(())
