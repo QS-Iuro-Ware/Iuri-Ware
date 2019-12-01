@@ -129,6 +129,31 @@ function addIuroImage(target_id, offset){
 function startRockPapiuroScissor() {
   showMessage("RockPapiuroScissor starting, play your hand");
   document.querySelector("#RockPapiuroScissor").style = "";
+  const options = ['Rock', 'Papiuro', 'Scissor'];
+  const sources = ['img/rock.jpg', 'img/paper.png', 'img/scissors.jpg'];
+
+  options.forEach((value, index) => {
+    var optionDiv = document.createElement("div");
+    var img = document.createElement("img");
+    img.setAttribute("id", "img");
+    img.src = sources[index];
+    optionDiv.appendChild(img);
+
+    var radioInput = document.createElement('input');
+    if(index == 0)
+      radioInput.checked = true;
+    radioInput.setAttribute("type", "radio");
+    radioInput.setAttribute("name", "iuro_selection");
+    radioInput.setAttribute("value", value);
+    optionDiv.appendChild(radioInput);
+    document.querySelector("#RockPapiuroScissor").appendChild(optionDiv);
+  });
+
+  var button = document.createElement("input");
+  button.setAttribute("type", "button");
+  button.setAttribute("value", "OK");
+  button.setAttribute("onClick", "data.gameInput.push({ game: 'RockPapiuroScissor', input: document.querySelector('input[name=\"iuro_selection\"]:checked').value })");
+  document.querySelector("#RockPapiuroScissor").appendChild(button);
 }
 
 function startTheRightIuro(game) {
@@ -161,7 +186,7 @@ function startTheRightIuro(game) {
     });
     var button = document.createElement("input");
     button.setAttribute("type", "button");
-    button.setAttribute("value", "Enviar");
+    button.setAttribute("value", "OK");
     button.setAttribute("onClick", "data.gameInput.push({ game: 'TheRightIuro', input: [parseInt(document.querySelector('input[name=\"iuro_selection\"]:checked').value)] })");
     document.querySelector("#TheRightIuro").appendChild(button);
   }, 2000);

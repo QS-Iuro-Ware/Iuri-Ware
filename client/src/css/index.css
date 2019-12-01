@@ -74,7 +74,7 @@ body[data-name="room"]{
   margin: 2px 0;
 }
 
-#game, #TheRightIuro, #leader-board{
+#game, #TheRightIuro, #RockPapiuroScissor, #leader-board{
   flex: 2;
   margin: 50px;
   display: flex;
@@ -131,6 +131,17 @@ body[data-name="room"]{
   margin: auto;
 }
 
+#RockPapiuroScissor{
+  background: black;
+  border: 5px solid yellow;
+  display: grid;
+}
+
+#RockPapiuroScissor div #img{
+  width: 128px;
+  height: 128px;
+  margin: auto;
+}
 
 @-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
 @-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }

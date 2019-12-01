@@ -34,7 +34,13 @@ function gameInput({ game, input }) {
 }
 
 function sendRockPapiuroScissor(button) {
+  clearDiv("RockPapiuroScissor");
+  console.log(button);
   showMessage(titleCase(name || "You") + " threw " + button.toLowerCase());
+  var div = document.querySelector("#RockPapiuroScissor");
+  var img = document.createElement("img");
+  img.src = "img/clock.jpeg";
+  div.appendChild(img);
   sendRockPapiuroScissorInput(button);
 }
 
@@ -67,14 +73,14 @@ function startGame(game) {
   }
 }
 
-
 function stopGame(game) {
   score = game[1]
+  // updateLeaderBoard();
   switch (game[0]) {
-    case "Rock Papiuro Scissor":
+    case "RockPapiuroScissor":
       stopRockPapiuroScissor();
       break;
-    case "The Right Iuro":
+    case "TheRightIuro":
       stopTheRightIuro();
       break;
   }
@@ -82,6 +88,7 @@ function stopGame(game) {
 
 function stopRockPapiuroScissor() {
   showMessage("RockPapiuroScissor ended");
+  clearDiv("RockPapiuroScissor");
   document.querySelector("#RockPapiuroScissor").style = "display: none;";
 }
 

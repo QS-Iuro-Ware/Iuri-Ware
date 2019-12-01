@@ -74,7 +74,7 @@ impl Room {
                     input: *input,
                     state,
                 };
-                name = "RockPapiuro Scissor";
+                name = "RockPapiuroScissor";
                 update.consume(&mut self.sessions)?
             }
             (Some(GameState::TheRightIuro(state)), GameInput::TheRightIuro(input)) => {
