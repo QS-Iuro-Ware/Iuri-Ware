@@ -44,7 +44,6 @@ function updateLeaderboard() {
 
 function sendRockPapiuroScissor(button) {
   clearDiv("RockPapiuroScissor");
-  console.log(button);
   showMessage(titleCase(name || "You") + " threw " + button.toLowerCase());
   var div = document.querySelector("#RockPapiuroScissor");
   var img = document.createElement("img");
@@ -64,20 +63,25 @@ function sendTheRightIuro(button) {
 }
 
 function startGame(game) {
-  document.querySelector("#leader-board").style = "";
-  var score_children = document.querySelector("#leader-board .score").children;
-  var i = 0;
-  for(var player in score){
-    score_children[i].textContent = player+" "+score[player];
-    i++;
-  }
-  var score_ok_button = document.querySelector("#leader-board input");
+  var id = score == null ? "#start-page" : "#leader-board";
+  var ok_button = document.querySelector(id + " input");
+
+  document.querySelector(id).style = "";
+  if(score){
+    var score_children = document.querySelector("#leader-board .score").children;
+    var i = 0;
+    for(var player in score){
+      score_children[i].textContent = player+" "+score[player];
+      i++;
+    }
+  } 
+
   switch (game) {
     case "RockPapiuroScissor":
-      score_ok_button.setAttribute("onClick", "document.querySelector('#leader-board').style.display = 'none'; startRockPapiuroScissor()");
+      ok_button.setAttribute("onClick", "document.querySelector('"+ id +"').style.display = 'none'; startRockPapiuroScissor()");
       break;
     default:
-      score_ok_button.setAttribute("onClick", "document.querySelector('#leader-board').style.display = 'none'; startTheRightIuro("+JSON.stringify(game)+")");
+      ok_button.setAttribute("onClick", "document.querySelector('"+ id +"').style.display = 'none'; startTheRightIuro("+JSON.stringify(game)+")");
       break;
   }
 }

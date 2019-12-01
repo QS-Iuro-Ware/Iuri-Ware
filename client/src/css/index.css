@@ -52,6 +52,10 @@ body[data-name="room"]{
   width: 90vw;
 }
 
+.row.roomrow input{
+  font-size: 18px;
+}
+
 .chat{
   padding: 20px;
   background: lightgray;
@@ -74,7 +78,7 @@ body[data-name="room"]{
   margin: 2px 0;
 }
 
-#game, #TheRightIuro, #RockPapiuroScissor, #leader-board{
+#game, #TheRightIuro, #RockPapiuroScissor, #leader-board, #start-page{
   flex: 2;
   margin: 50px;
   display: flex;
@@ -99,11 +103,6 @@ body[data-name="room"]{
   border: 5px solid green;
   color: red;
   flex-direction: column;
-  /* position: absolute;
-  margin: auto;
-  right: 5vw;
-  width: calc(90vw - 414px);
-  min-width: 660px; */
 }
 
 #leader-board img{
@@ -122,7 +121,35 @@ body[data-name="room"]{
   display: flex;
   flex-direction: column;
   text-align: center;
+  align-items: center;
   width: 16%;
+}
+
+#start-page{
+  background: #FF00C2;
+  border: 5px solid black;
+  flex-direction: column;
+  justify-content: end;
+}
+
+#start-page img{
+  margin: 50px 20px;
+  width: 250px;
+}
+
+#start-page .flag{
+  width: 200px;
+  height: 150px;
+}
+
+#start-page .img-wrapper{
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+#start-page input, #leader-board input{
+  width: 150px;
 }
 
 #TheRightIuro #img{
