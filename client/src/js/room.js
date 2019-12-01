@@ -33,6 +33,15 @@ function gameInput({ game, input }) {
   }
 }
 
+function updateLeaderboard() {
+  var score_children = document.querySelector("#chat-leaderboard").children;
+  var i = 0;
+  for(var player in score){
+    score_children[i].textContent = player+" "+score[player];
+    i++;
+  }
+}
+
 function sendRockPapiuroScissor(button) {
   clearDiv("RockPapiuroScissor");
   console.log(button);
@@ -75,7 +84,7 @@ function startGame(game) {
 
 function stopGame(game) {
   score = game[1]
-  // updateLeaderBoard();
+  updateLeaderboard();
   switch (game[0]) {
     case "RockPapiuroScissor":
       stopRockPapiuroScissor();
