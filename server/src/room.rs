@@ -65,7 +65,8 @@ impl Room {
         &mut self,
         user_id: usize,
         input: GameInput,
-    ) -> Result<HashMap<String, usize>, IuroError> {
+    ) -> Result<(&'static str, HashMap<String, usize>), IuroError> {
+        let name;
         let has_ended = match (self.game.as_mut(), &input) {
             (Some(GameState::RockPapiuroScissor(state)), GameInput::RockPapiuroScissor(input)) => {
                 let update = games::rock_papiuro_scissor::Update {
@@ -73,6 +74,7 @@ impl Room {
                     input: *input,
                     state,
                 };
+                name = "Rock Papiuro Scissor";
                 update.consume(&mut self.sessions)?
             }
             (Some(GameState::TheRightIuro(state)), GameInput::TheRightIuro(input)) => {
@@ -81,6 +83,7 @@ impl Room {
                     input: input.clone(),
                     state,
                 };
+                name = "The Right Iuro";
                 update.consume(&mut self.sessions)?
             }
             (None, _) => {
@@ -95,14 +98,14 @@ impl Room {
 
         if has_ended {
             // If game has ended
-            Ok(self
+            Ok((name, self
                 .sessions
                 .values()
                 .map(|slot| (slot.name.clone(), slot.wins))
-                .collect())
+                .collect()))
         } else {
             // Nobody won yet
-            Ok(HashMap::default())
+            Ok((name, HashMap::default()))
         }
     }
 

@@ -15,7 +15,7 @@ pub enum Response {
     /// Which game is starting
     GameStarted(Game),
     /// Returns map of users and their wins
-    GameEnded(HashMap<String, usize>),
+    GameEnded((&'static str, HashMap<String, usize>)),
 }
 
 /// Commands sent from client (to be deserialized)
@@ -52,7 +52,7 @@ pub enum Broadcast {
     /// Game that has just started, with its data
     GameStarted(Game),
     /// Game ended, returns map of users and their winnings
-    GameEnded(HashMap<String, usize>),
+    GameEnded((&'static str, HashMap<String, usize>)),
 }
 
 /// Creates new session
