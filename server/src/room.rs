@@ -74,7 +74,7 @@ impl Room {
                     input: *input,
                     state,
                 };
-                name = "Rock Papiuro Scissor";
+                name = "RockPapiuro Scissor";
                 update.consume(&mut self.sessions)?
             }
             (Some(GameState::TheRightIuro(state)), GameInput::TheRightIuro(input)) => {
@@ -83,7 +83,7 @@ impl Room {
                     input: input.clone(),
                     state,
                 };
-                name = "The Right Iuro";
+                name = "TheRightIuro";
                 update.consume(&mut self.sessions)?
             }
             (None, _) => {
