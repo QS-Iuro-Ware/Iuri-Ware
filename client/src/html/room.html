@@ -12,28 +12,41 @@
       </form>
     </div>
 
-    <div class="score">
-      <span style="color: red">Victo 2</span>
-      <span style="color: skyblue">Iuro 1</span>
-      <span style="color: blueviolet">Atonio -23444</span>
-      <span style="color: lawngreen">Paolo 1233442</span>
+    <div id="chat-leaderboard" class="score">
+      <span style="color: red"></span>
+      <span style="color: skyblue"></span>
+      <span style="color: blueviolet"></span>
+      <span style="color: lawngreen"></span>
     </div>
   </div>
 
-  <!-- <div id="game">
-    <img src="img/const2.png" alt="construction">
-  </div> -->
+  <div id="start-page" style="display: none;">
+    <div class="img-wrapper">
+      <img src="img/flag.png" alt="flag" class="flag">
+      <img src="img/start.jpg" alt="start">
+      <img src="img/flag.png" alt="flag" class="flag">
+    </div>
+    <input type="button" value="OK"/>
+  </div>
+
+  <div id="leader-board" style="display: none;">
+    <span>LEADERBOARD</span>
+    <div style="display: flex; justify-content: center;">
+      <img src="img/trophy.jpg" alt="trophy">
+      <div class="score-wrapper">
+        <div class="score">
+            <span style="color: red"></span>
+            <span style="color: skyblue"></span>
+            <span style="color: blueviolet"></span>
+            <span style="color: lawngreen"></span>
+        </div>
+        <input type="button" value="OK"/>
+      </div>
+      <img src="img/white-dude.jpg" alt="white-dude">
+    </div>
+  </div>
 
   <div id="RockPapiuroScissor" style="display: none;">
-    <button onclick="data.gameInput.push({ game: 'RockPapiuroScissor', input: 'Rock' })">
-      Rock
-    </button>
-    <button onclick="data.gameInput.push({ game: 'RockPapiuroScissor', input: 'Papiuro' })">
-      Papiuro
-    </button>
-    <button onclick="data.gameInput.push({ game: 'RockPapiuroScissor', input: 'Scissor' })">
-      Scissor
-    </button>
   </div>
 
   <div id="TheRightIuro" style="display: none;">

@@ -97,3 +97,97 @@ async function querySelector(selector) {
   });
   return Promise.race([getter, timeout]);
 }
+
+//startGame Functions
+
+
+function showMessage(msg) {
+  const control = document.querySelector("#chat");
+  control.appendChild(document.createTextNode(msg));
+  control.innerHTML = control.innerHTML + "<br/>";
+  control.scrollTop = control.scrollTop + 1000;
+}
+
+function clearDiv(id){
+  const div = document.getElementById(id);
+  while (div.firstChild) {
+    div.firstChild.remove();
+  }
+}
+
+function addIuroImage(target_id, offset){
+  var sources = ["img/triangle-Sheet.png", "img/square-Sheet.png", "img/circle-Sheet.png"];
+  var file = sources[Math.floor((offset%36)/12)];
+  var image = document.createElement("div");
+  image.setAttribute("id", "img");
+  image.style.background = "url("+file+")";
+  image.style.backgroundPositionX = -128*(offset%12)+"px";
+  document.querySelector("#"+target_id).appendChild(image);
+}
+
+
+function startRockPapiuroScissor() {
+  showMessage("RockPapiuroScissor starting, play your hand");
+  document.querySelector("#RockPapiuroScissor").style = "";
+  const options = ['Rock', 'Papiuro', 'Scissor'];
+  const sources = ['img/rock.jpg', 'img/paper.png', 'img/scissors.jpg'];
+
+  options.forEach((value, index) => {
+    var optionDiv = document.createElement("div");
+    var img = document.createElement("img");
+    img.setAttribute("id", "img");
+    img.src = sources[index];
+    optionDiv.appendChild(img);
+
+    var radioInput = document.createElement('input');
+    if(index == 0)
+      radioInput.checked = true;
+    radioInput.setAttribute("type", "radio");
+    radioInput.setAttribute("name", "iuro_selection");
+    radioInput.setAttribute("value", value);
+    optionDiv.appendChild(radioInput);
+    document.querySelector("#RockPapiuroScissor").appendChild(optionDiv);
+  });
+
+  var button = document.createElement("input");
+  button.setAttribute("type", "button");
+  button.setAttribute("value", "OK");
+  button.setAttribute("onClick", "data.gameInput.push({ game: 'RockPapiuroScissor', input: document.querySelector('input[name=\"iuro_selection\"]:checked').value })");
+  document.querySelector("#RockPapiuroScissor").appendChild(button);
+}
+
+function startTheRightIuro(game) {
+  var offsets = game.TheRightIuro;
+  
+  showMessage("The Right Iuro is starting, you have 2 seconds to memorize this dude");
+  // show right image for 2 seconds
+  addIuroImage("TheRightIuro", offsets[0]);
+  document.querySelector("#TheRightIuro").style = "";
+  
+  setTimeout(function(){
+     
+    clearDiv("TheRightIuro");
+    document.querySelector("#TheRightIuro").style.gridTemplateColumns = "minmax(150px, 200px) minmax(150px, 200px) minmax(150px, 200px)";
+    
+    offsets.sort(() => .5 - Math.random()).forEach((value, index) => {
+      
+      var img_wrapper = document.createElement("div");
+      img_wrapper.setAttribute("id", "img_wrapper"+index);
+      document.querySelector("#TheRightIuro").appendChild(img_wrapper);
+      // add random images and selection buttons
+      var radioInput = document.createElement('input');
+      if(index == 0)
+        radioInput.checked = true;
+      radioInput.setAttribute("type", "radio");
+      radioInput.setAttribute("name", "iuro_selection");
+      radioInput.setAttribute("value", value);
+      img_wrapper.appendChild(radioInput);
+      addIuroImage("img_wrapper"+index, value);
+    });
+    var button = document.createElement("input");
+    button.setAttribute("type", "button");
+    button.setAttribute("value", "OK");
+    button.setAttribute("onClick", "data.gameInput.push({ game: 'TheRightIuro', input: [parseInt(document.querySelector('input[name=\"iuro_selection\"]:checked').value)] })");
+    document.querySelector("#TheRightIuro").appendChild(button);
+  }, 2000);
+}
