@@ -134,7 +134,7 @@ impl Distribution<Game> for Standard {
                 let mut values = Vec::with_capacity(8);
                 while values.len() < 8 {
                     let value = rng.gen_range(0, 36);
-                    if !values.contains(value) {
+                    if !values.contains(&value) {
                         values.push(value);
                     }
                 }
