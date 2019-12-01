@@ -25,6 +25,12 @@ body[data-name="name"], body[data-name="join"]{
   background-size: 200px;
 }
 
+#logo{
+  display: block;
+  margin: auto;
+  margin-bottom: 10px;
+}
+
 .centerform{
   display: block;
   background: white;
