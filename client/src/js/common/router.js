@@ -14,7 +14,7 @@ async function route(obj) {
   } else if (obj.GameEnded != null) {
     data.messages.push("Game " + obj.GameEnded[0] + " ended:");
     data.messages.push("Points: " + JSON.stringify(obj.GameEnded[1]));
-    data.endGame.push(obj.GameEnded[0]);
+    data.endGame.push(obj.GameEnded);
   } else if (obj.Text != null) {
     data.messages.push(obj.Text);
   } else if (obj.Error != null) {

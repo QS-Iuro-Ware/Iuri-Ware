@@ -1,3 +1,5 @@
+var score = null;
+
 function registerRoom() {
   registerEvent("room", "#send", "click", createMessage);
   registerEvent("room", "#text", "keyup", sendOnEnter);
@@ -31,23 +33,6 @@ function gameInput({ game, input }) {
   }
 }
 
-function clearDiv(id){
-  const div = document.getElementById(id);
-  while (div.firstChild) {
-    div.firstChild.remove();
-  }
-}
-
-function addIuroImage(target_id, offset){
-  var sources = ["img/triangle-Sheet.png", "img/square-Sheet.png", "img/circle-Sheet.png"];
-  var file = sources[Math.floor((offset%36)/12)];
-  var image = document.createElement("div");
-  image.setAttribute("id", "img");
-  image.style.background = "url("+file+")";
-  image.style.backgroundPositionX = -128*(offset%12)+"px";
-  document.querySelector("#"+target_id).appendChild(image);
-}
-
 function sendRockPapiuroScissor(button) {
   showMessage(titleCase(name || "You") + " threw " + button.toLowerCase());
   sendRockPapiuroScissorInput(button);
@@ -64,70 +49,32 @@ function sendTheRightIuro(button) {
 }
 
 function startGame(game) {
-  switch (game) {
-    case "RockPapiuroScissor":
-      startRockPapiuroScissor();
-      break;
-    default:
-      startTheRightIuro(game);
-      break;
-  }
-}
-
-function startRockPapiuroScissor() {
-  showMessage("RockPapiuroScissor starting, play your hand");
-  document.querySelector("#RockPapiuroScissor").style = "";
-}
-
-function startTheRightIuro(game) {
-  var offsets = game.TheRightIuro;
-  
-  showMessage("The Right Iuro is starting, you have 2 seconds to memorize this dude");
-  // show right image for 2 seconds
-  addIuroImage("TheRightIuro", offsets[0]);
-  document.querySelector("#TheRightIuro").style = "";
-  
-  setTimeout(function(){
-     
-    clearDiv("TheRightIuro");
-    document.querySelector("#TheRightIuro").style.gridTemplateColumns = "minmax(150px, 200px) minmax(150px, 200px) minmax(150px, 200px)";
-    
-    offsets.sort(() => .5 - Math.random()).forEach((value, index) => {
-      
-      var img_wrapper = document.createElement("div");
-      img_wrapper.setAttribute("id", "img_wrapper"+index);
-      document.querySelector("#TheRightIuro").appendChild(img_wrapper);
-      // add random images and selection buttons
-      var radioInput = document.createElement('input');
-      if(index == 0)
-        radioInput.checked = true;
-      radioInput.setAttribute("type", "radio");
-      radioInput.setAttribute("name", "iuro_selection");
-      radioInput.setAttribute("value", value);
-      img_wrapper.appendChild(radioInput);
-      addIuroImage("img_wrapper"+index, value);
-    });
-    var button = document.createElement("input");
-    button.setAttribute("type", "button");
-    button.setAttribute("value", "Enviar");
-    button.setAttribute("onClick", "data.gameInput.push({ game: 'TheRightIuro', input: [parseInt(document.querySelector('input[name=\"iuro_selection\"]:checked').value)] })");
-    document.querySelector("#TheRightIuro").appendChild(button);
-  }, 2000);
-}
-
-function stopGame(game) {
   document.querySelector("#leader-board").style = "";
   var score_children = document.querySelector("#leader-board .score").children;
   var i = 0;
-  for(var player in game){
-    score_children[i].textContent = player+" "+game[player];
+  for(var player in score){
+    score_children[i].textContent = player+" "+score[player];
     i++;
   }
+  var score_ok_button = document.querySelector("#leader-board input");
   switch (game) {
     case "RockPapiuroScissor":
+      score_ok_button.setAttribute("onClick", "document.querySelector('#leader-board').style.display = 'none'; startRockPapiuroScissor()");
+      break;
+    default:
+      score_ok_button.setAttribute("onClick", "document.querySelector('#leader-board').style.display = 'none'; startTheRightIuro("+JSON.stringify(game)+")");
+      break;
+  }
+}
+
+
+function stopGame(game) {
+  score = game[1]
+  switch (game[0]) {
+    case "Rock Papiuro Scissor":
       stopRockPapiuroScissor();
       break;
-    case "TheRightIuro":
+    case "The Right Iuro":
       stopTheRightIuro();
       break;
   }
@@ -140,15 +87,9 @@ function stopRockPapiuroScissor() {
 
 function stopTheRightIuro() {
   showMessage("TheRightIuro ended");
-    clearDiv("TheRightIuro");
-    document.querySelector("#RockPapiuroScissor").style = "display: none;";
+  clearDiv("TheRightIuro");
+  document.querySelector("#TheRightIuro").style = "display: none;";
 }
 
-function showMessage(msg) {
-  const control = document.querySelector("#chat");
-  control.appendChild(document.createTextNode(msg));
-  control.innerHTML = control.innerHTML + "<br/>";
-  control.scrollTop = control.scrollTop + 1000;
-}
 
 registerRoom();
