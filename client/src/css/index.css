@@ -74,26 +74,55 @@ body[data-name="room"]{
   margin: 2px 0;
 }
 
-#game{
+#game, #TheRightIuro, #leader-board{
   flex: 2;
-  background: white;
-  border: 1px solid;
   margin: 50px;
   display: flex;
   justify-content: center;
   height: 70vh;
-  align-items: center;}
+  align-items: center;
+}
+
+#game{
+  background: white;
+  border: 1px solid;
+}
 
 #TheRightIuro{
-  flex: 2;
   background: blue;
   border: 5px solid red;
-  margin: 50px;
-  justify-content: center;
-  height: 70vh;
-  align-items: center;
   display: grid;
-  /* grid-template-columns: minmax(150px, 200px) minmax(150px, 200px) minmax(150px, 200px); */
+}
+
+#leader-board{
+  background: yellow;
+  border: 5px solid green;
+  color: red;
+  flex-direction: column;
+  position: absolute;
+  margin: auto;
+  right: 5vw;
+  width: calc(90vw - 414px);
+  min-width: 660px;
+}
+
+#leader-board img{
+  margin: 0 50px;
+  height: 300px;
+  width: 200px;
+}
+
+#leader-board .score{
+  background: none;
+  margin-bottom: 30px;
+}
+
+#leader-board .score-wrapper{
+  justify-content: center;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  width: 16%;
 }
 
 #TheRightIuro #img{

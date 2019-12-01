@@ -116,6 +116,13 @@ function startTheRightIuro(game) {
 }
 
 function stopGame(game) {
+  document.querySelector("#leader-board").style = "";
+  var score_children = document.querySelector("#leader-board .score").children;
+  var i = 0;
+  for(var player in game){
+    score_children[i].textContent = player+" "+game[player];
+    i++;
+  }
   switch (game) {
     case "RockPapiuroScissor":
       stopRockPapiuroScissor();
